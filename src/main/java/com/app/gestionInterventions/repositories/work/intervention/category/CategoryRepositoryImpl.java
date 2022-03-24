@@ -1,0 +1,93 @@
+package com.app.gestionInterventions.repositories.work.intervention.category;
+
+import com.app.gestionInterventions.models.work.intervention.Intervention;
+import com.app.gestionInterventions.models.work.intervention.category.Category;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
+
+@Repository
+public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
+    private final MongoTemplate mongoTemplate;
+
+
+    @Autowired
+    public CategoryRepositoryImpl(MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
+    }
+
+    @Override
+    public Optional<Category> create(Category category) {
+
+        return Optional.of(this.mongoTemplate.save(category));
+    }
+
+    @Override
+    public long update(String id, Category category) {
+        return 0;
+    }
+
+    @Override
+    public long detele(String id) {
+        Query query = new Query();
+        query.addCriteria(new Criteria("_id").is(id));
+        return this.mongoTemplate.remove(query,Category.class).getDeletedCount();
+    }
+
+    @Override
+    public Optional<Category> findByName(String name ) {
+        Query query = new Query();
+        query.addCriteria(new Criteria("eCategory").is(name));
+        return Optional.ofNullable(mongoTemplate.findOne(query,Category.class));
+    }
+
+    @Override
+    public boolean existsByName(String name) {
+        return this.findByName(name).isPresent();
+    }
+
+    @Override
+    public Optional<List<Category>> all() {
+        return Optional.ofNullable(this.mongoTemplate.findAll(Category.class));
+    }
+
+    @Override
+    public Optional<Category> findById(String id) {
+        Query query = new Query();
+        query.addCriteria(new Criteria("_id").is(id));
+        return Optional.ofNullable(this.mongoTemplate.findOne(query,Category.class));
+
+    }
+    public Optional<List<Category>> search(String key, String value) {
+
+
+        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
+        Aggregation aggregation = newAggregation(matchOperation);
+        AggregationResults<Category> aggregationResults = this.mongoTemplate.aggregate(aggregation,"categories",Category.class);
+        return Optional.of(aggregationResults.getMappedResults());
+    }
+    @Override
+    public Optional<List<Intervention>> findInterventionsByCategory(String id) {
+        return Optional.empty();
+    }
+
+    public boolean create(List<Category> categoryList) {
+        return this.mongoTemplate.insertAll(categoryList).size()>0;
+    }
+
+    @Override
+    public  void dropCollection()
+    {
+        this.mongoTemplate.dropCollection(Category.class);
+    }
+}

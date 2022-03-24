@@ -1,0 +1,26 @@
+package com.app.gestionInterventions.controllers;
+
+import com.app.gestionInterventions.exceptions.EntityValidatorException;
+import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.payload.response.MessageResponse;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
+import java.util.List;
+import java.util.Map;
+
+public interface IResource<T> {
+    @PostMapping("")
+    ResponseEntity<MessageResponse> create(@RequestBody @Valid T t, BindingResult bindingResult) throws EntityValidatorException;
+    @PutMapping("/{id}")
+    ResponseEntity<MessageResponse>update(@PathVariable(value = "id") String id , @RequestBody @Valid T t, BindingResult bindingResult)throws ResourceNotFoundException,EntityValidatorException;
+    @DeleteMapping("/{id}")
+    ResponseEntity<MessageResponse>delete(@PathVariable(value = "id") String id)throws ResourceNotFoundException;
+    @GetMapping("")
+    List<T> all(@RequestParam Map<String,String> allParams)throws ResourceNotFoundException;
+    @GetMapping("/{id}")
+    T findById(@PathVariable(value = "id",required = true) String id)throws ResourceNotFoundException;
+
+}
