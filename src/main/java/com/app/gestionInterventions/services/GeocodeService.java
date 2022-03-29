@@ -20,10 +20,10 @@ public class GeocodeService {
         return true;
     }
     public Location fromCity(Address address) {
-        return Arrays.asList(this.restTemplate.getForEntity(this.generateUrl(address.getAddressZone()),Location[].class).getBody()).get(0);
+        return Arrays.asList(this.restTemplate.getForEntity(this.generateUrl(address.addressZone()),Location[].class).getBody()).get(0);
     }
     public Object romCity(Address address) {
-        return this.restTemplate.getForEntity(this.generateUrl(address.getAddressZone()),Object.class).getBody();
+        return this.restTemplate.getForEntity(this.generateUrl(address.addressZone()),Object.class).getBody();
     }
     private String generateUrl(String input)
     {

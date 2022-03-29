@@ -32,7 +32,13 @@ public class Material {
     private Address address;
     @NotBlank
     private Status status;
-    public Material(String id, String name, String description, Date dateOfPurchase, Address address, Status status) {
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public Material(@JsonProperty(value = "id",required = false) String id,
+                    @JsonProperty(value = "name",required = true)String name,
+                    @JsonProperty(value = "description",required = true)String description,
+                    @JsonProperty(value = "dateOfPurchase",required = true)Date dateOfPurchase,
+                    @JsonProperty(value = "address",required = true)Address address,
+                    @JsonProperty(value = "status",required = true)Status status) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -40,15 +46,7 @@ public class Material {
         this.address = address;
         this.status = status;
     }
-    @JsonCreator
-    public Material(@JsonProperty("name")  String name, @JsonProperty("description")  String description, @JsonProperty("dateOfPurchase")  Date dateOfPurchase, @JsonProperty("address") Address address, @JsonProperty("status") Status status) {
-        this.name = name;
-        this.description = description;
-        this.dateOfPurchase = dateOfPurchase;
-        this.address = address;
-        this.status = status;
-    }
-    public Material(){}
+
 
 
 

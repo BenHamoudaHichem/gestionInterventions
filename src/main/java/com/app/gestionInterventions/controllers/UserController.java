@@ -15,6 +15,7 @@ import com.app.gestionInterventions.services.FileUploadService;
 import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
@@ -48,8 +49,7 @@ public class UserController  {
     @Autowired
     GeocodeService geocodeService;
 
-
-    @PostMapping("")
+    @PostMapping(value = "",consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterUserRequest registerRequest, BindingResult bindingResult) throws EntityValidatorException {
 
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
@@ -57,16 +57,12 @@ public class UserController  {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
 
-
-        Address address = new Address(registerRequest.getAdresse().getZipCode(),registerRequest.getAdresse().getStreet(),registerRequest.getAdresse().getCity()
-                ,registerRequest.getAdresse().getState(),registerRequest.getAdresse().getCountry());
-
-        address.setLocation(geocodeService.fromCity(registerRequest.getAdresse()));
+        registerRequest.getAdresse().setLocation(geocodeService.fromCity(registerRequest.getAdresse()));
         User user = new User(registerRequest.getFirstName(),
                 registerRequest.getLastName(),
                 registerRequest.getIdentifier(),
                 encoder.encode(registerRequest.getPassword()),
-                address,
+                registerRequest.getAdresse(),
                 registerRequest.getTel()
         );
 
@@ -103,8 +99,7 @@ public class UserController  {
 
         user.setRoles(roles);
         userRepository.create(user);
-
-        return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"User registered successfully!"));
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,registerRequest.getFirstName()+", Vous etes maintenant insrit avec nous"));
     }
     @PostMapping("/file")
     public ResponseEntity<MessageResponse> create(@RequestParam("file") MultipartFile file) throws IOException {
@@ -117,5 +112,10 @@ public class UserController  {
         }
         this.userRepository.create(FileUploadService.loadMaterial(dest, User.class));
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Users file registered successfully!"));
+    }
+    @GetMapping("")
+    public List<User>all()
+    {
+        return this.userRepository.all().get();
     }
 }

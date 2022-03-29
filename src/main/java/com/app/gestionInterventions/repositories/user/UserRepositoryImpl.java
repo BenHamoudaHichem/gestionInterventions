@@ -3,6 +3,7 @@ package com.app.gestionInterventions.repositories.user;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.Role;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
@@ -20,6 +21,7 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 @Repository
 public class UserRepositoryImpl implements UserRepositoryCustom{
     private final MongoTemplate mongoTemplate;
+
 
     @Autowired
     public UserRepositoryImpl(MongoTemplate mongoTemplate) {
@@ -59,7 +61,9 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
     @Override
     public Optional<User> findById(String id) {
-        return Optional.empty();
+        Query query = new Query();
+        query.addCriteria(new Criteria("_id").is(id));
+        return Optional.ofNullable(this.mongoTemplate.findOne(query, User.class));
     }
 
     @Override
@@ -100,4 +104,5 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
     {
         this.mongoTemplate.dropCollection(User.class);
     }
+
 }

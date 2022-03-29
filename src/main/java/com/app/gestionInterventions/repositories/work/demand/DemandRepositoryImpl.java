@@ -41,7 +41,7 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
 
         update.set("title",demand.getTitle());
         update.set("description",demand.getDescription());
-        update.set("address",demand.getAdresse());
+        update.set("address",demand.getAddress());
         update.set("status",demand.getStatus());
         return this.mongoTemplate.updateFirst(query,update,Demand.class).getModifiedCount();
     }

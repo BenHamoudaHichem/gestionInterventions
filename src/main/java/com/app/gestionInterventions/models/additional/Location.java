@@ -1,6 +1,8 @@
 package com.app.gestionInterventions.models.additional;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
@@ -20,10 +22,11 @@ public class Location {
         this.longitude = BigDecimal.valueOf(longitude);
         this.latitude = BigDecimal.valueOf(latitude);
     }
-    public Location(Long longitude, Long latitude) {
+    public Location(Long longitude,Long latitude) {
         this.longitude = BigDecimal.valueOf(longitude);
         this.latitude = BigDecimal.valueOf(latitude);
     }
+
     public Location(String longitude, String latitude) {
         this.longitude = new BigDecimal(longitude);
         this.latitude = new BigDecimal(latitude);

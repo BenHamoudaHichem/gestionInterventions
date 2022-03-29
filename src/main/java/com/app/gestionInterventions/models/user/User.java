@@ -45,7 +45,7 @@ public class User {
     @Size(min = 8,max = 8)
     private String tel;
 
-    @DBRef
+    @DBRef(lazy = true)
     private Set<Role> roles = new HashSet<>();
     @JsonCreator
     public User(String firstName, String lastName, String identifier, String password, Address address, String tel) {

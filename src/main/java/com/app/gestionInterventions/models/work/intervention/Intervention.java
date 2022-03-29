@@ -6,6 +6,7 @@ import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -42,19 +43,17 @@ public class Intervention {
     protected Team team;
     protected final LocalDateTime createdAt;
 
-    public Intervention(String title, String description, Category category, Address address, LocalDateTime startedAt, Status status, List<Demand> demandList, Team team, LocalDateTime createdAt) {
-        this.id = null;
-        this.title = title;
-        this.description = description;
-        this.category = category;
-        this.address = address;
-        this.startedAt = startedAt;
-        this.status = status;
-        this.demandList = demandList;
-        this.team = team;
-        this.createdAt = LocalDateTime.now();    }
 
-    public Intervention(String id, String title, String description, Category category, Address address, LocalDateTime startedAt, Status status, List<Demand> demandList, Team team, LocalDateTime createdAt) {
+
+    public Intervention(@JsonProperty(value = "id",required = false) String id,
+                        @JsonProperty(value = "title",required = true) String title,
+                        @JsonProperty(value = "description",required = true)String description,
+                        @JsonProperty(value = "category",required = true)Category category,
+                        @JsonProperty(value = "address",required = true)Address address,
+                        @JsonProperty(value = "startedAt",required = true)LocalDateTime startedAt,
+                        @JsonProperty(value = "demandList",required = true)Status status, List<Demand> demandList,
+                        @JsonProperty(value = "team",required = true)Team team,
+                        @JsonProperty(value = "createdAt",required = false)LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -64,7 +63,7 @@ public class Intervention {
         this.status = status;
         this.demandList = demandList;
         this.team = team;
-        this.createdAt = createdAt;
+        this.createdAt = createdAt== null ? LocalDateTime.now():createdAt;
     }
 
     public String getId() {

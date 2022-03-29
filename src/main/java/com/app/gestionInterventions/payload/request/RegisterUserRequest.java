@@ -2,12 +2,13 @@ package com.app.gestionInterventions.payload.request;
 
 import com.app.gestionInterventions.models.additional.Address;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Set;
-
 public class RegisterUserRequest {
 
     @NotBlank
@@ -100,5 +101,18 @@ public class RegisterUserRequest {
 
     public void setRoles(Set<String> roles) {
         this.roles = roles;
+    }
+
+    @Override
+    public String toString() {
+        return "RegisterUserRequest{" +
+                "firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", identifier='" + identifier + '\'' +
+                ", password='" + password + '\'' +
+                ", address=" + address +
+                ", tel='" + tel + '\'' +
+                ", roles=" + roles +
+                '}';
     }
 }

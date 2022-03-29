@@ -2,9 +2,11 @@ package com.app.gestionInterventions.controllers;
 
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
+import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,8 @@ import java.util.Map;
 public class DemandController implements IResource<Demand>  {
     @Autowired
     DemandRepositoryImpl demandRepository;
+    @Autowired
+    GeocodeService geocodeService;
 
     @Override
     public ResponseEntity<MessageResponse> create(Demand demand, BindingResult bindingResult) throws EntityValidatorException {
@@ -30,6 +34,7 @@ public class DemandController implements IResource<Demand>  {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
+        demand.getAddress().setLocation(geocodeService.fromCity(demand.getAddress()));
         if (this.demandRepository.create(demand).isPresent())
         {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre demande est enregistrée avec succès"));

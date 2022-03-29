@@ -3,6 +3,7 @@ package com.app.gestionInterventions.controllers;
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.payload.response.MessageResponse;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 public interface IResource<T> {
-    @PostMapping("")
+    @PostMapping(value = "",     consumes = {MediaType.APPLICATION_JSON_VALUE},
+            produces = {MediaType.APPLICATION_JSON_UTF8_VALUE})
     ResponseEntity<MessageResponse> create(@RequestBody @Valid T t, BindingResult bindingResult) throws EntityValidatorException;
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}")
     ResponseEntity<MessageResponse>update(@PathVariable(value = "id") String id , @RequestBody @Valid T t, BindingResult bindingResult)throws ResourceNotFoundException,EntityValidatorException;
     @DeleteMapping("/{id}")
     ResponseEntity<MessageResponse>delete(@PathVariable(value = "id") String id)throws ResourceNotFoundException;
