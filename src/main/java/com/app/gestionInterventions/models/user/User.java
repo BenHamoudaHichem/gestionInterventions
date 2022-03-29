@@ -4,6 +4,7 @@ import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.user.role.Role;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -18,6 +19,7 @@ import java.util.Set;
 
 @Document(collection = "users")
 @JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
+
 public class User {
     @Id
     private String id;
@@ -46,7 +48,7 @@ public class User {
     @Size(min = 8,max = 8)
     private String tel;
 
-    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
+    @DBRef(lazy = true)
     private Set<Role> roles = new HashSet<>();
     @JsonCreator
     public User(String firstName, String lastName, String identifier, String password, Address address, String tel) {

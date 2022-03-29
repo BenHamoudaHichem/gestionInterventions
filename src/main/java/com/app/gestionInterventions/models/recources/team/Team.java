@@ -20,9 +20,9 @@ public class Team {
     @NotBlank
     @Size(min = 2,max = 60)
     private String name;
-    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
+    @DBRef(lazy = true)
     private User manager;
-    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
+    @DBRef(lazy = true)
     private List<User> members;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

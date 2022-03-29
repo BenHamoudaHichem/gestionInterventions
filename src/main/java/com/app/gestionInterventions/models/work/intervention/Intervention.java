@@ -29,7 +29,7 @@ public class Intervention {
     @NotBlank
     @Size(min = 8,max = 255)
     protected String description;
-    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
+    @DBRef(lazy = true)
     protected Category category;
     @NotNull
     protected Address address;
@@ -37,9 +37,9 @@ public class Intervention {
     protected LocalDateTime startedAt;
     @NotBlank
     protected Status status;
-    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
+    @DBRef(lazy = true)
     protected List<Demand> demandList;
-    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
+    @DBRef(lazy = true)
     protected Team team;
     protected final LocalDateTime createdAt;
 
