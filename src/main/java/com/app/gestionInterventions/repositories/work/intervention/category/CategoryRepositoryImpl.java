@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -34,7 +35,14 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
 
     @Override
     public long update(String id, Category category) {
-        return 0;
+        Query query= new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+
+        Update update =new Update();
+
+        update.set("name",category.getName());
+
+        return this.mongoTemplate.updateFirst(query,update, Category.class).getModifiedCount();
     }
 
     @Override

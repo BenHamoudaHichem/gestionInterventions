@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import javax.validation.constraints.NotBlank;
 
 @Document(collection = "categories")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
 public class Category {
     @Id
     private String id;

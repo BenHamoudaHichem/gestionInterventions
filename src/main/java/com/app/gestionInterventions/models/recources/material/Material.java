@@ -15,7 +15,7 @@ import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Document(collection = "materials")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",} )
 public class Material {
     @Id
     private String id;

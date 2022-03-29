@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "interventions")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
 public class Intervention {
 
     @Id
@@ -29,7 +29,7 @@ public class Intervention {
     @NotBlank
     @Size(min = 8,max = 255)
     protected String description;
-    @NotBlank
+    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
     protected Category category;
     @NotNull
     protected Address address;
@@ -37,9 +37,9 @@ public class Intervention {
     protected LocalDateTime startedAt;
     @NotBlank
     protected Status status;
-    @DBRef(lazy = true)
+    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
     protected List<Demand> demandList;
-    @DBRef(lazy = true)
+    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
     protected Team team;
     protected final LocalDateTime createdAt;
 

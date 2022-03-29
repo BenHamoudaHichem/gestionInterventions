@@ -8,23 +8,30 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Document(collection = "teams")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
 public class Team {
     @Id
     private String id;
-    @DBRef(lazy = true)
+    @NotBlank
+    @Size(min = 2,max = 60)
+    private String name;
+    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
     private User manager;
-    @DBRef(lazy = true)
+    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
     private List<User> members;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Team(@JsonProperty(value = "id",required = false) String id,
+                @JsonProperty(value = "name",required = true) String name,
                 @JsonProperty(value = "manager",required = true) User manager,
                 @JsonProperty(value = "members",required = true) List<User> members) {
         this.id = id;
+        this.name=name;
         this.manager = manager;
         this.members = members;
     }
@@ -33,8 +40,12 @@ public class Team {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public User getManager() {

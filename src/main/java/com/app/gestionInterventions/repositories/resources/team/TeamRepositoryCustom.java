@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TeamRepositoryCustom extends ICrud<Team> {
-    boolean isAvailable();
+    boolean isAvailable(Team team);
     Optional<List<Team>> teamAvailable();
-    int nbIntervention();
+    long nbIntervention(Team team);
 }

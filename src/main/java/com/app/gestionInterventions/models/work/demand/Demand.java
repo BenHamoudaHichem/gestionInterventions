@@ -1,6 +1,6 @@
 package com.app.gestionInterventions.models.work.demand;
 
-import com.app.gestionInterventions.configuration.Config;
+
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.user.User;
@@ -19,7 +19,7 @@ import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 
 @Document(collection = "demands")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
 public class Demand {
     @Id
     private String id;
@@ -125,10 +125,5 @@ public class Demand {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-    private static User affectUserFromId(String id) throws ResourceNotFoundException {
-        ApplicationContext applicationContext=new AnnotationConfigApplicationContext(Config.class);
-         //UserRepositoryImpl myuser=new UserRepositoryImpl(applicationContext.getBean(MongoTemplate.class));
-            //    return myuser.findById(id).orElseThrow(ResourceNotFoundException::new);
-        return null;
-    }
+
 }

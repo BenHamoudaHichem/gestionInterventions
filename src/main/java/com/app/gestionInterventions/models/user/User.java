@@ -13,10 +13,11 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Document(collection = "users")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
 public class User {
     @Id
     private String id;
@@ -45,7 +46,7 @@ public class User {
     @Size(min = 8,max = 8)
     private String tel;
 
-    @DBRef(lazy = true)
+    @DBRef(lazy = true,db = "${spring.data.mongodb.database}")
     private Set<Role> roles = new HashSet<>();
     @JsonCreator
     public User(String firstName, String lastName, String identifier, String password, Address address, String tel) {
@@ -120,5 +121,18 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return getId().equals(user.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }

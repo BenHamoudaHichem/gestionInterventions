@@ -36,7 +36,7 @@ public class TeamController implements IResource<Team> {
         {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Equipe enregistrée avec succés"));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur d'enregistrer l'équipe"));
+        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur d'enregistrer de cet équipe"));
 
     }
 

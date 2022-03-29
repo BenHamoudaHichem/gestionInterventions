@@ -36,4 +36,5 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
             ResourceNotFoundException ex) {
         return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.NOT_FOUND,ex.getMessage()));
     }
+
 }

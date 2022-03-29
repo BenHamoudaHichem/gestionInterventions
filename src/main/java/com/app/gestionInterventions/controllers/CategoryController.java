@@ -6,6 +6,7 @@ import com.app.gestionInterventions.models.work.intervention.category.Category;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -29,7 +30,8 @@ public class CategoryController implements IResource<Category> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
-        return null;
+        this.categoryRepository.create(category);
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Cette category est enregistrée avec succes")) ;
     }
 
     @Override
@@ -38,7 +40,11 @@ public class CategoryController implements IResource<Category> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
-        return null;
+        if(this.categoryRepository.update(id,category)>0)
+        {
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Cette category est enregistrée avec succes")) ;
+        }
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.NOT_MODIFIED,"Erreur de modification")) ;
     }
 
     @Override
