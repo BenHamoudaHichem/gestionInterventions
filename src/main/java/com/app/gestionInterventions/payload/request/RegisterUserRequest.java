@@ -12,15 +12,15 @@ import java.util.Set;
 public class RegisterUserRequest {
 
     @NotBlank
-    @Size(min=2,max = 20)
+    @Size(min=2,max = 50)
     private String firstName;
 
     @NotBlank
-    @Size(min=2,max = 20)
+    @Size(min=2,max = 50)
     private String lastName;
 
     @NotBlank
-    @Size(max = 10,min = 8)
+    @Size(min = 8)
     private String identifier;
 
     @NotBlank

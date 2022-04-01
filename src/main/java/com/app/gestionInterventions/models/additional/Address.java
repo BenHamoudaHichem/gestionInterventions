@@ -11,7 +11,7 @@ import java.math.BigInteger;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Address {
-    private BigInteger zipCode;
+    private String zipCode;
     @NotBlank
     private String street;
     @NotBlank
@@ -23,7 +23,7 @@ public class Address {
     @NotNull
     private Location location;
 
-    public Address(BigInteger zipCode, String street,String city,String state, String country, Location location) {
+    public Address(String zipCode, String street,String city,String state, String country, Location location) {
         this.zipCode = zipCode;
         this.street = street;
         this.city = city;
@@ -33,11 +33,11 @@ public class Address {
     }
 
 
-    public BigInteger getZipCode() {
+    public String getZipCode() {
         return zipCode;
     }
 
-    public void setZipCode(BigInteger zipCode) {
+    public void setZipCode(String zipCode) {
         this.zipCode = zipCode;
     }
 

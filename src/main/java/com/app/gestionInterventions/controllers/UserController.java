@@ -101,6 +101,18 @@ public class UserController  {
         userRepository.create(user);
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,registerRequest.getFirstName()+", Vous etes maintenant insrit avec nous"));
     }
+    @PutMapping(value = "/{id}",consumes = {MediaType.APPLICATION_JSON_VALUE},produces = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<MessageResponse> update (@PathVariable(value = "id") String id ,@RequestBody @Valid User user,BindingResult bindingResult) throws EntityValidatorException {
+        if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
+        {
+            throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
+        }
+        if (this.userRepository.update(id,user)>0)
+        {
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"User modifiée avec succés"));
+        }
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur de modification!"));
+    }
     @PostMapping("/file")
     public ResponseEntity<MessageResponse> create(@RequestParam("file") MultipartFile file) throws IOException {
         File dest = new File("H:\\PFE\\Réalisation\\Nouveau dossier\\gestInertv\\gestInertv\\src\\main\\resources\\dest.json");
@@ -114,8 +126,7 @@ public class UserController  {
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Users file registered successfully!"));
     }
     @GetMapping("")
-    public List<User>all()
-    {
-        return this.userRepository.all().get();
+    public List<User>all() throws ResourceNotFoundException {
+        return this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
     }
 }
