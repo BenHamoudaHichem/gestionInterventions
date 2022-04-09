@@ -33,7 +33,6 @@ public class User {
     private String lastName;
     @NotBlank
     @Size(min = 8)
-    @Indexed(unique = true)
     private String identifier;
 
     @NotNull
@@ -43,16 +42,15 @@ public class User {
     @NotNull
     private Address address;
     @NotBlank(message = "Téléphone doit etre composé d 8 chiffre")
-    @Indexed(unique = true)
-
     @Size(min = 8,max = 8)
     private String tel;
 
-    @DBRef(lazy = true)
+    @DBRef
     private Set<Role> roles = new HashSet<>();
     @JsonCreator
-    public User(String firstName, String lastName, String identifier, String password, Address address, String tel) {
+    public User(String id,String firstName, String lastName, String identifier, String password, Address address, String tel) {
 
+        this.id=id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.identifier = identifier;
@@ -136,5 +134,19 @@ public class User {
     @Override
     public int hashCode() {
         return Objects.hash(getId());
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id='" + id + '\'' +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", identifier='" + identifier + '\'' +
+                ", password='" + password + '\'' +
+                ", address=" + address +
+                ", tel='" + tel + '\'' +
+                ", roles=" + roles +
+                '}';
     }
 }

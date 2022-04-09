@@ -2,21 +2,29 @@ package com.app.gestionInterventions.repositories.resources.team;
 
 import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
+import com.app.gestionInterventions.models.user.role.ERole;
+import com.app.gestionInterventions.models.user.role.Role;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.Status;
+import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.role.RoleRepository;
+import com.mongodb.DBRef;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
@@ -25,13 +33,23 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 public class TeamRepositoryImpl implements TeamRepositoryCustom{
     private final MongoTemplate mongoTemplate;
 
+    UserRepositoryImpl userRepository;
     @Autowired
     public TeamRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+        this.userRepository=new UserRepositoryImpl(mongoTemplate);
     }
 
     @Override
     public Optional<Team> create(Team team) {
+        Query query=new Query();
+        query.addCriteria(Criteria.where("name").regex("ROLE_TEAMMANAGER"));
+        Role role=this.mongoTemplate.findOne(query,Role.class);
+
+        this.checkIndex();
+        team.getManager().setRoles(new HashSet<Role>(Arrays.asList(role)));
+
+        this.userRepository.update(team.getManager().getId(),team.getManager());
         return Optional.ofNullable(this.mongoTemplate.save(team));
     }
 
@@ -46,9 +64,10 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
             team.getMembers().remove(team.getManager());
         }
         update.set("name",team.getName());
-        update.set("manager",team.getManager());
-        update.set("members",team.getMembers());
-        return this.mongoTemplate.updateFirst(query,update, User.class).getModifiedCount();
+        update.set("manager",new DBRef("users",new ObjectId(team.getManager().getId())));
+        update.set("status",team.getStatus());
+        update.set("members",team.getMembers().stream().map(x->new DBRef("users",new ObjectId(x.getId()))).collect(Collectors.toList()));
+        return this.mongoTemplate.updateFirst(query,update, Team.class).getModifiedCount();
 
     }
 
@@ -70,7 +89,7 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
     public Optional<Team> findById(String id) {
         Query query= new Query();
         query.addCriteria(new Criteria("_id").is(id));
-        return Optional.of(this.mongoTemplate.findOne(query,Team.class));
+        return Optional.ofNullable(this.mongoTemplate.findOne(query,Team.class));
     }
     public Optional<List<Team>> search(String key, String value) {
 
@@ -110,5 +129,11 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
     public  void dropCollection()
     {
         this.mongoTemplate.dropCollection(Team.class);
+    }
+    private void checkIndex()
+    {
+        this.mongoTemplate.indexOps(Team.class).ensureIndex(
+                new CompoundIndexDefinition(new Document()).on("name", Sort.Direction.ASC).unique()
+        );
     }
 }

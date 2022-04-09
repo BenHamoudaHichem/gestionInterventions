@@ -11,13 +11,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @CrossOrigin(origins = "*",maxAge = 36000)
 @RestController
@@ -73,7 +76,7 @@ public class DemandController implements IResource<Demand>  {
         List<Demand> res = new ArrayList<Demand>();
         for (Map.Entry<String,String> e:
                 args.entrySet()) {
-            res.addAll(this.demandRepository.search(e.getKey(),e.getValue()).orElse(null));
+                res.addAll(this.demandRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<Demand>()));
         }
         if (res.isEmpty()){
             throw new ResourceNotFoundException();
@@ -84,5 +87,9 @@ public class DemandController implements IResource<Demand>  {
     @Override
     public Demand findById(String id) throws ResourceNotFoundException {
         return this.demandRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+    }
+    @GetMapping("/user/{id}")
+    public List<Demand> findByUser(@PathVariable(value = "id")String id) throws ResourceNotFoundException {
+        return this.demandRepository.allByUser(id).orElseThrow(ResourceNotFoundException::new);
     }
 }

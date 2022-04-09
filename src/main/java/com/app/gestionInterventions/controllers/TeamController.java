@@ -3,8 +3,12 @@ package com.app.gestionInterventions.controllers;
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.recources.team.Team;
+import com.app.gestionInterventions.models.user.role.ERole;
+import com.app.gestionInterventions.models.user.role.Role;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +17,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @CrossOrigin(origins = "*",maxAge = 36000)
 @RestController
@@ -24,6 +26,10 @@ public class TeamController implements IResource<Team> {
 
     @Autowired
     TeamRepositoryImpl teamRepository;
+    @Autowired
+    RoleRepository roleRepository;
+    @Autowired
+    UserRepositoryImpl userRepository;
 
 
     @Override
@@ -32,12 +38,13 @@ public class TeamController implements IResource<Team> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
+        team.getManager().setRoles(new HashSet<Role>(Arrays.asList(this.roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get())));
+        userRepository.update(team.getManager().getId(),team.getManager());
         if (this.teamRepository.create(team).isPresent())
         {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Equipe enregistrée avec succés"));
         }
         return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur d'enregistrer de cet équipe"));
-
     }
 
     @Override

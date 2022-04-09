@@ -2,11 +2,15 @@ package com.app.gestionInterventions.repositories.work.intervention.category;
 
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
+import org.springframework.data.mongodb.core.index.TextIndexDefinition;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -29,6 +33,9 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
 
     @Override
     public Optional<Category> create(Category category) {
+
+
+        this.checkIndex();
 
         return Optional.of(this.mongoTemplate.save(category));
     }
@@ -97,5 +104,12 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
     public  void dropCollection()
     {
         this.mongoTemplate.dropCollection(Category.class);
+    }
+
+    private void checkIndex()
+    {
+        this.mongoTemplate.indexOps(Category.class).ensureIndex(
+                new CompoundIndexDefinition(new Document()).on("name", Sort.Direction.ASC).unique()
+        );
     }
 }

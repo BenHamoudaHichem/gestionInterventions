@@ -1,10 +1,15 @@
 package com.app.gestionInterventions.repositories.work.intervention.intervention;
 
 import com.app.gestionInterventions.models.work.intervention.Intervention;
+import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.mongodb.DBRef;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
+import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -13,6 +18,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
@@ -29,7 +35,8 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     @Override
     public Optional<Intervention> create(Intervention intervention)
     {
-        return Optional.of(this.mongoTemplate.save(intervention,"interventions"));
+        this.checkIndex();
+        return Optional.of(this.mongoTemplate.save(intervention));
     }
 
     @Override
@@ -37,13 +44,19 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
 
+
+
         Update update =new Update();
+
 
         update.set("title",intervention.getTitle());
         update.set("description",intervention.getDescription());
         update.set("startedAt",intervention.getStartedAt());
-        update.set("category",intervention.getCategory());
-        update.set("team",intervention.getTeam());
+        update.set("category",new DBRef("categories",new ObjectId(intervention.getCategory().getId())));
+        update.set("team",new DBRef("teams",new ObjectId(intervention.getTeam().getId())));
+        update.set("materialList",intervention.getMaterialList().stream().map(x->new DBRef("materials",new ObjectId(x.getId()))).collect(Collectors.toList()));
+        update.set("demandList",intervention.getDemandList().stream().map(x->new DBRef("demands",new ObjectId(x.getId()))).collect(Collectors.toList()));
+
         update.set("status",intervention.getStatus());
         return this.mongoTemplate.updateFirst(query,update,Intervention.class).getModifiedCount();
     }
@@ -119,5 +132,12 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     public  void dropCollection()
     {
         this.mongoTemplate.dropCollection(Intervention.class);
+    }
+
+    private void checkIndex()
+    {
+        this.mongoTemplate.indexOps(Intervention.class).ensureIndex(
+                new CompoundIndexDefinition(new Document()).on("title", Sort.Direction.ASC).unique()
+        );
     }
 }

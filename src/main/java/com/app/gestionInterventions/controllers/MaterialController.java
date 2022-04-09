@@ -77,6 +77,7 @@ public class MaterialController implements IResource<Material> {
         if (res.isEmpty()){
             throw new ResourceNotFoundException();
         }
+
         return res;
     }
 

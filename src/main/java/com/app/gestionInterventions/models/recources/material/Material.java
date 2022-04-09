@@ -31,11 +31,11 @@ public class Material {
     private Status status;
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Material(@JsonProperty(value = "id",required = false) String id,
-                    @JsonProperty(value = "name",required = true)String name,
-                    @JsonProperty(value = "description",required = true)String description,
-                    @JsonProperty(value = "dateOfPurchase",required = true)Date dateOfPurchase,
-                    @JsonProperty(value = "address",required = true)Address address,
-                    @JsonProperty(value = "status",required = true)Status status) {
+                    @JsonProperty(value = "name",required = false)String name,
+                    @JsonProperty(value = "description",required = false)String description,
+                    @JsonProperty(value = "dateOfPurchase",required = false)Date dateOfPurchase,
+                    @JsonProperty(value = "address",required = false)Address address,
+                    @JsonProperty(value = "status",required = false)Status status) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -76,11 +76,11 @@ public class Material {
         this.description = description;
     }
 
-    public Address getAdresse() {
+    public Address getAddress() {
         return address;
     }
 
-    public void setAdresse(Address address) {
+    public void setAddress(Address address) {
         this.address = address;
     }
 

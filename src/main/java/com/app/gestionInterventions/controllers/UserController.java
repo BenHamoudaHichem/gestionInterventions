@@ -2,7 +2,7 @@ package com.app.gestionInterventions.controllers;
 
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
-import com.app.gestionInterventions.models.additional.Address;
+import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
@@ -24,15 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.io.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @CrossOrigin(origins = "*",maxAge = 36000)
 @RestController
 @RequestMapping("/api/users")
-public class UserController  {
+public class UserController {
 
     @Autowired
     UserRepositoryImpl userRepository;
@@ -58,7 +55,8 @@ public class UserController  {
         }
 
         registerRequest.getAdresse().setLocation(geocodeService.fromCity(registerRequest.getAdresse()));
-        User user = new User(registerRequest.getFirstName(),
+        User user = new User(
+                null,registerRequest.getFirstName(),
                 registerRequest.getLastName(),
                 registerRequest.getIdentifier(),
                 encoder.encode(registerRequest.getPassword()),
@@ -71,26 +69,32 @@ public class UserController  {
         Set<Role> roles = new HashSet<>();
 
         if (strRoles == null) {
-            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+            Role userRole = roleRepository.findByName(ERole.ROLE_CUSTOMER)
                     .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             roles.add(userRole);
         } else {
             strRoles.forEach(role -> {
                 switch (role) {
-                    case "admin":
-                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                    case "manager":
+                        Role managerRole = roleRepository.findByName(ERole.ROLE_MANAGER)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(adminRole);
+                        roles.add(managerRole);
+
+                        break;
+                    case "member":
+                        Role memberRole = roleRepository.findByName(ERole.ROLE_MEMBER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(memberRole);
 
                         break;
                     case "tm":
-                        Role modRole = roleRepository.findByName(ERole.ROLE_TeamManager)
+                        Role tmRole = roleRepository.findByName(ERole.ROLE_TEAMMANAGER)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(modRole);
+                        roles.add(tmRole);
 
                         break;
                     default:
-                        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                        Role userRole = roleRepository.findByName(ERole.ROLE_CUSTOMER)
                                 .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(userRole);
                 }
@@ -102,7 +106,7 @@ public class UserController  {
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,registerRequest.getFirstName()+", Vous etes maintenant insrit avec nous"));
     }
     @PutMapping(value = "/{id}",consumes = {MediaType.APPLICATION_JSON_VALUE},produces = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<MessageResponse> update (@PathVariable(value = "id") String id ,@RequestBody @Valid User user,BindingResult bindingResult) throws EntityValidatorException {
+    public ResponseEntity<MessageResponse> updateOne (@PathVariable(value = "id") String id ,@RequestBody @Valid User user,BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
@@ -126,7 +130,50 @@ public class UserController  {
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Users file registered successfully!"));
     }
     @GetMapping("")
-    public List<User>all() throws ResourceNotFoundException {
-        return this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
+    public List<User>all(@RequestParam Map<String, String> args) throws ResourceNotFoundException {
+        if(args.isEmpty())
+        {
+            return this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
+        }
+        List<User> res = new ArrayList<User>();
+        for (Map.Entry<String,String> e:
+                args.entrySet()) {
+            if (e.getKey().contains("role")) {
+                Role role;
+                switch (e.getValue()) {
+                    case "manager":
+                        role = roleRepository.findByName(ERole.ROLE_MANAGER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+                        break;
+                    case "member":
+                        role = roleRepository.findByName(ERole.ROLE_MEMBER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+                        break;
+                    case "tm":
+                        role = roleRepository.findByName(ERole.ROLE_TEAMMANAGER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+                        break;
+                    default:
+                        role = roleRepository.findByName(ERole.ROLE_CUSTOMER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                }
+                res.addAll(this.userRepository.findByRoLe(role).orElse(new ArrayList<>()));
+                continue;
+            }
+
+            res.addAll(this.userRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<>()));
+        }
+        if (res.isEmpty()){
+            throw new ResourceNotFoundException();
+        }
+        return res;
+    }
+
+    @GetMapping(value = "/{id}",produces = {MediaType.APPLICATION_JSON_VALUE})
+    public User findById(@PathVariable(value = "id",required = true) String id) throws ResourceNotFoundException {
+      return userRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
     }
 }

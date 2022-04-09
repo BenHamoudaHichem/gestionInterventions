@@ -1,10 +1,14 @@
 package com.app.gestionInterventions.repositories.work.demand;
 
 import com.app.gestionInterventions.models.work.demand.Demand;
+import com.app.gestionInterventions.models.work.intervention.category.Category;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
+import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -97,8 +101,9 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
             direction = Sort.Direction.DESC;
         }
         SortOperation sortOperation = Aggregation.sort(Sort.by(direction, factory));
+        MatchOperation matchOperation =Aggregation.match(Criteria.where(key).regex(value));;
 
-        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
+
         Aggregation aggregation = newAggregation(sortOperation,matchOperation);
         AggregationResults<Demand> aggregationResults = this.mongoTemplate.aggregate(aggregation,"demands",Demand.class);
         return Optional.of(aggregationResults.getMappedResults());
@@ -107,8 +112,16 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
     @Override
     public Optional<List<Demand>> search(String key, String value) {
 
-        return this.search(key,value,true,"name") ;
+        return this.search(key,value,false,"createdAt") ;
     }
+
+    @Override
+    public Optional<List<Demand>> allByUser(String id) {
+        Query query=new Query();
+        query.addCriteria(Criteria.where("user.$id").is(new ObjectId(id)));
+        return Optional.of(this.mongoTemplate.find(query,Demand.class));
+    }
+
     public int create(List<Demand> demandList)
     {
         return this.mongoTemplate.insertAll(demandList).size();
@@ -118,4 +131,5 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
         this.mongoTemplate.dropCollection(Demand.class);
     }
     private boolean collectionIsEmpty(){return this.mongoTemplate.collectionExists(Demand.class);}
+
 }

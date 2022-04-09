@@ -1,15 +1,11 @@
 package com.app.gestionInterventions.models.work.demand;
 
 
-import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.user.User;
-import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.fasterxml.jackson.annotation.*;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.MongoTemplate;
+
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -23,30 +19,33 @@ import java.time.LocalDateTime;
 public class Demand {
     @Id
     private String id;
+
     @NotBlank
     @Size(min = 3,max = 50)
     private String title;
+
     @NotBlank
     @Size(min = 3,max = 255)
     private String description ;
 
     @NotNull
-
     private Address address;
+
     @NotNull
     private Status status;
-    @DBRef(lazy = true)
+
+    @DBRef
     private User user;
 
     private final LocalDateTime createdAt;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Demand(@JsonProperty(value = "id",required = false)String id,
-                  @JsonProperty(value = "title",required = true)String title,
-                  @JsonProperty(value = "description",required = true)String description,
-                  @JsonProperty(value = "address",required = true)Address address,
-                  @JsonProperty(value = "status",required = true)Status status,
-                  @JsonProperty(value = "user",required = true)User user,
+                  @JsonProperty(value = "title",required = false)String title,
+                  @JsonProperty(value = "description",required = false)String description,
+                  @JsonProperty(value = "address",required = false)Address address,
+                  @JsonProperty(value = "status",required = false)Status status,
+                  @JsonProperty(value = "user",required = false)User user,
                   @JsonProperty(value = "createdAt",required = false)LocalDateTime createdAt) {
         this.id = id;
         this.title = title;
@@ -57,28 +56,8 @@ public class Demand {
         this.createdAt = createdAt== null ? LocalDateTime.now():createdAt;
     }
 
-
-
-
-    public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
-    }
-
-
-
-
-
-
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getTitle() {
@@ -97,12 +76,11 @@ public class Demand {
         this.description = description;
     }
 
-
-    public Address getAdresse() {
+    public Address getAddress() {
         return address;
     }
 
-    public void setAdresse(Address address) {
+    public void setAddress(Address address) {
         this.address = address;
     }
 
@@ -125,5 +103,4 @@ public class Demand {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
 }

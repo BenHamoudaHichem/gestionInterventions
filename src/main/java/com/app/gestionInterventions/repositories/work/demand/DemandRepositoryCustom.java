@@ -11,4 +11,5 @@ public interface DemandRepositoryCustom extends ICrud<Demand> {
     Optional<List<Demand>> all(int rows,boolean crescent, String factory);
     Optional<List<Demand>>search(String key,String value,boolean crescent, String factory);
     Optional<List<Demand>>search(String key,String value);
+    Optional<List<Demand>>allByUser(String id);
 }

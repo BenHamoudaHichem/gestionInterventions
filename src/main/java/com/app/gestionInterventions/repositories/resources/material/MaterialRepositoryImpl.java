@@ -42,7 +42,7 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
 
         update.set("name",material.getName());
         update.set("description",material.getDescription());
-        update.set("address",material.getAdresse());
+        update.set("address",material.getAddress());
         update.set("dateOfPurchase",material.getDateOfPurchase());
 
         update.set("status",material.getStatus());

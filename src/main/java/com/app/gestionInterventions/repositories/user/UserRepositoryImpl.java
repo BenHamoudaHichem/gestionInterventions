@@ -1,20 +1,32 @@
 package com.app.gestionInterventions.repositories.user;
 
 import com.app.gestionInterventions.models.user.User;
+import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
+import com.app.gestionInterventions.models.work.intervention.Intervention;
+import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.mongodb.DBRef;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.aggregation.SortOperation;
+import org.springframework.data.mongodb.core.index.CompoundIndexDefinition;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
@@ -30,21 +42,24 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
     @Override
     public Optional<User> create(User user) {
+        this.checkIndex();
         return Optional.of(this.mongoTemplate.save(user,"users"));
     }
 
     @Override
-    public long update(String id, User user) {
+    public long update(String id,@NotNull User user) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
 
         Update update =new Update();
 
+        Set<DBRef> roles= user.getRoles().stream().map(x->new DBRef("roles",new ObjectId(x.getId()))).collect(Collectors.toSet());
         update.set("firstName",user.getFirstName());
         update.set("lastName",user.getLastName());
         update.set("address",user.getAddress());
+        update.set("tel",user.getTel());
         update.set("password",user.getPassword());
-        update.set("role",user.getRoles());
+        update.set("roles",roles);
         return this.mongoTemplate.updateFirst(query,update, User.class).getModifiedCount();
     }
 
@@ -66,13 +81,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         return Optional.ofNullable(this.mongoTemplate.findOne(query, User.class));
     }
 
-    @Override
-    public Optional<List<User>> search(String key, String value) {
-        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
-        Aggregation aggregation = newAggregation(matchOperation);
-        AggregationResults<User> aggregationResults = this.mongoTemplate.aggregate(aggregation,"users",User.class);
-        return Optional.of(aggregationResults.getMappedResults());
-    }
+
 
     @Override
     public Optional<List<User>> findByRole(Role role) {
@@ -105,4 +114,40 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         this.mongoTemplate.dropCollection(User.class);
     }
 
+    public Optional<List<User>> findByRoLe(Role role)
+    {
+        Query query=new Query();
+        query.addCriteria(Criteria.where("roles.$id").is(new ObjectId(role.getId())));
+        return Optional.ofNullable(this.mongoTemplate.find(query,User.class));
+    }
+    @Override
+    public Optional<List<User>> search(String key, String value, boolean crescent, String factory) {
+        Sort.Direction direction = Sort.Direction.ASC;
+        if(!crescent)
+        {
+            direction = Sort.Direction.DESC;
+        }
+        SortOperation sortOperation = Aggregation.sort(Sort.by(direction, factory));
+        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
+
+        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
+        AggregationResults<User> aggregationResults = this.mongoTemplate.aggregate(aggregation,"users",User.class);
+        return Optional.of(aggregationResults.getMappedResults());
+    }
+
+    @Override
+    public Optional<List<User>> search(String key, String value) {
+
+        return this.search(key,value,true,"name") ;
+    }
+
+    private void checkIndex()
+    {
+        this.mongoTemplate.indexOps(User.class).ensureIndex(
+                new CompoundIndexDefinition(new Document()).on("identifier", Sort.Direction.ASC).unique()
+        );
+        this.mongoTemplate.indexOps(User.class).ensureIndex(
+                new CompoundIndexDefinition(new Document()).on("tel", Sort.Direction.ASC).unique()
+        );
+    }
 }

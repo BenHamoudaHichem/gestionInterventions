@@ -1,7 +1,8 @@
 package com.app.gestionInterventions.models.user.role;
 
 public enum ERole {
-    ROLE_USER,
-    ROLE_TeamManager,
-    ROLE_ADMIN
+    ROLE_CUSTOMER,
+    ROLE_TEAMMANAGER,
+    ROLE_MANAGER,
+    ROLE_MEMBER
 }

@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "teams")
@@ -20,26 +21,39 @@ public class Team {
     @NotBlank
     @Size(min = 2,max = 60)
     private String name;
-    @DBRef(lazy = true)
+    @DBRef
     private User manager;
-    @DBRef(lazy = true)
+    @DBRef
     private List<User> members;
+    private Status status;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Team(@JsonProperty(value = "id",required = false) String id,
-                @JsonProperty(value = "name",required = true) String name,
-                @JsonProperty(value = "manager",required = true) User manager,
-                @JsonProperty(value = "members",required = true) List<User> members) {
+                @JsonProperty(value = "name",required = false) String name,
+                @JsonProperty(value = "manager",required = false) User manager,
+                @JsonProperty(value = "members",required = false) List<User> members,
+                @JsonProperty(value = "status",required = false)Status status) {
         this.id = id;
         this.name=name;
         this.manager = manager;
         this.members = members;
+        this.status=status== null ? Status.Available:status;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getId() {
         return id;
     }
+    public Status getStatus() {
+        return status;
+    }
 
+    public void setStatus(Status status) {
+        this.status = status;
+    }
     public String getName() {
         return name;
     }
@@ -56,6 +70,7 @@ public class Team {
         this.manager = manager;
     }
 
+
     public List<User> getMembers() {
         return members;
     }
@@ -63,4 +78,15 @@ public class Team {
     public void setMembers(List<User> members) {
         this.members = members;
     }
+    @Override
+    public String toString() {
+        return "Team{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", manager=" + manager +
+                ", members=" + members +
+                ", status=" + status +
+                '}';
+    }
+
 }

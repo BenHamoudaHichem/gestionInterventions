@@ -1,5 +1,6 @@
 package com.app.gestionInterventions.models.blackList;
 
+import com.app.gestionInterventions.models.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.data.annotation.Id;
