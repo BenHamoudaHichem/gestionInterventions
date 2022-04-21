@@ -11,7 +11,7 @@ public class MailConfiguration {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setText("Ahmed");
         message.setText(
-                "This is the TEST email template for your email:\n%s\n");
+                "This is the TEST email template gtgtrbrbggtbfgbgnhnhn bggbgv your email:\n%s\n");
         BigInteger bigInteger;
         BigInteger bigInteger2;
         return message;
