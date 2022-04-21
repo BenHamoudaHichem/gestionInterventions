@@ -5,7 +5,7 @@ import org.springframework.mail.SimpleMailMessage;
 
 import java.math.BigInteger;
 
-public class MailConfig {
+public class MailConfiguration {
     @Bean
     public SimpleMailMessage templateSimpleMessage() {
         SimpleMailMessage message = new SimpleMailMessage();
