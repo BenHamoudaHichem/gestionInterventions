@@ -13,6 +13,7 @@ public class MailConfig {
         message.setText(
                 "This is the TEST email template for your email:\n%s\n");
         BigInteger bigInteger;
+        BigInteger bigInteger2;
         return message;
     }
 }
