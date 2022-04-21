@@ -1,7 +1,7 @@
 package com.app.gestionInterventions;
 
+import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
-import com.app.gestionInterventions.models.additional.Location;
 import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.models.recources.material.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
@@ -19,6 +19,10 @@ import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
+import com.app.gestionInterventions.services.MailService;
+import com.app.gestionInterventions.services.password.AESPasswordEncoder;
+import com.app.gestionInterventions.services.GeocodeService;
+import com.app.gestionInterventions.services.TNCitiesClient;
 import com.github.javafaker.Faker;
 import com.github.javafaker.service.FakeValuesService;
 import com.github.javafaker.service.RandomService;
@@ -27,22 +31,29 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.math.BigInteger;
+import javax.mail.MessagingException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
-
-@DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
+@SpringBootTest
+//@DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
 @ExtendWith(SpringExtension.class)
 class GestionInterventionsApplicationTests {
+
 	PasswordEncoder passwordEncoder;
 
+	MailService mailService= new MailService();
+
+	@Autowired
+	TNCitiesClient tnCitiesClient;
+
+
+    GeocodeService geocodeService=new GeocodeService();
 
 	MaterialRepositoryImpl materialRepository;
 	UserRepositoryImpl userRepository;
@@ -66,7 +77,7 @@ class GestionInterventionsApplicationTests {
 		this.interventionRepository =new InterventionRepositoryImpl(mongoTemplate);
 		this.teamRepository =new TeamRepositoryImpl(mongoTemplate);
 
-		this.passwordEncoder=new BCryptPasswordEncoder();
+		this.passwordEncoder=new AESPasswordEncoder();
 
 	}
 	@Test
@@ -81,31 +92,15 @@ class GestionInterventionsApplicationTests {
 		Material material;
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("en-GB"), new RandomService());
-		for (int i = 0; i <10 ; i++) {
+		for (int i = 0; i <12 ; i++) {
 			 faker = new Faker();
-
-			String streetName = faker.address().streetName();
-			String state = faker.address().state();
-			String city = faker.address().city();
-			String country = faker.address().country();
-			Address address=new Address(
-					faker.address().zipCode(),
-					faker.address().streetName(),
-					faker.address().cityName(),
-					faker.address().state(),
-					faker.address().country(),
-					new Location(
-							faker.address().longitude().replace(",","."),
-							faker.address().latitude().replace(",",".")
-					)
-			);
 			material=new Material(
 					null,
-					fakeValuesService.regexify("[a-z1-9]{10}"),
-					fakeValuesService.regexify("[a-z1-9]{50}"),
-					faker.date().birthday(),
-					address,
-					Status.Functional
+					faker.commerce().material(),
+					fakeValuesService.regexify("[A-Za-z]{165}"),
+					faker.date().birthday(7,10),
+					getAddress(faker),
+					Status.Broken_down
 
 			);
 			Assertions.assertNotNull(this.materialRepository.create(material));
@@ -119,18 +114,18 @@ class GestionInterventionsApplicationTests {
 	{
 		Faker faker=new Faker() ;
 		FakeValuesService fakeValuesService = new FakeValuesService(
-				new Locale("en-GB"), new RandomService());
+				new Locale("fr", "FRANCE", "WIN"), new RandomService());
 		User user;
 		for (int i = 0; i <1 ; i++) {
 			user=new User(
 					null,
 					faker.name().firstName(),
 					faker.name().lastName(),
-					"11223344",
+					"33445566",
 					//fakeValuesService.regexify("[1-9]{8}"),
 					passwordEncoder.encode("12345678"),
 					getAddress(faker),
-					fakeValuesService.regexify("[1-9]{8}")
+					fakeValuesService.regexify("[0-9]{8}")
 					);
 			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_CUSTOMER).get())));
 			Assertions.assertNotNull(this.userRepository.create(user));
@@ -139,31 +134,45 @@ class GestionInterventionsApplicationTests {
 	}
 	private Address getAddress(Faker faker)
 	{
+		Random ran = new Random();
+		int x = ran.nextInt(24) ;
 
-		return new Address(
+		String state=this.tnCitiesClient.getStates().getData().get(ran.nextInt(24));
+
+		List<String> cities=this.tnCitiesClient.getCitiesByState(state).getData();
+		String city=cities.get(ran.nextInt(cities.size()));
+		Address address= new Address(
 				faker.address().zipCode(),
 				faker.address().streetName(),
-				faker.address().cityName(),
-				faker.address().state(),
-				faker.address().country(),
-				new Location(
-						faker.address().longitude().replace(",","."),
-						faker.address().latitude().replace(",",".")
-				)
+				city,
+				state,
+				"Tunisie",
+				null
 		);
+        address.setLocation(geocodeService.fromCity(address));
+        return address;
 	}
 
 	@Test
 	public void createTeam()
 	{
+		Random ran = new Random();
 
-		Team team=this.teamRepository.create(new Team(null,
-				"equipe 2",
-				this.userRepository.findById("6250e5cf9345d57e85022bfe").get(),
-				(this.userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_MEMBER).get()).get().subList(1,3)),
-				com.app.gestionInterventions.models.recources.team.Status.Available
-				)).orElse(null);
-		Assertions.assertNotNull(team);
+		for (int i = 8; i <12 ; i++) {
+			List<User>availableMembers=teamRepository.availableMembers();
+			System.out.println(availableMembers.size());
+			Team team=this.teamRepository.create(new Team(null,
+					"equipe "+i,
+					availableMembers.get(0),
+					availableMembers.subList(1,ran.nextInt(2)+2),
+					com.app.gestionInterventions.models.recources.team.Status.Available
+			)).orElse(null);
+			Assertions.assertNotNull(team);
+		}
+
+
+
+
 
 		}
 
@@ -181,16 +190,18 @@ class GestionInterventionsApplicationTests {
 		Faker faker;
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("en-GB"), new RandomService());
+		Random ran = new Random();
 
-		for (int i = 0; i < 3; i++) {
+		List<User>users=userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_CUSTOMER).get()).get();
+		for (int i = 0; i < 30; i++) {
 			faker = new Faker();
 			demand = new Demand(
 					null,
 					fakeValuesService.regexify("[A-Za-z ]{15}"),
-					fakeValuesService.regexify("[A-Za-z]{55}"),
+					fakeValuesService.regexify("[A-Za-z ]{250}"),
 					this.getAddress(faker),
 					com.app.gestionInterventions.models.work.demand.Status.In_Progress,
-					userRepository.findById("625105651cd6613649540f8c").get(),
+					users.get(ran.nextInt(users.size())),
 					null
 			);
 			Assertions.assertNotNull(demandRepository.create(demand));
@@ -205,12 +216,55 @@ class GestionInterventionsApplicationTests {
 
 
 	}
+
+
 	@Test
-	public void somTests()
-	{
-		System.out.println(this.userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get()).get().size());
-	//	Assertions.assertNotNull(this.userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get()));
+	public void createIntervention() throws ResourceNotFoundException {
+		List<Demand>demandList;
+		FakeValuesService fakeValuesService = new FakeValuesService(
+				new Locale("en-GB"), new RandomService());
+		Random ran = new Random();
+		Faker faker;
+		for (int i = 1; i < 9; i++) {
+			faker=new Faker();
+			demandList=demandRepository.findDemandsByStatus(com.app.gestionInterventions.models.work.demand.Status.In_Progress).subList(1,ran.nextInt(1)+4);
+
+			Assertions.assertNotNull(interventionRepository.create(new Intervention(
+					null,
+					fakeValuesService.regexify("[A-Za-z]{17}")+i,
+					fakeValuesService.regexify("[A-Za-z ]{250}"),
+					categoryRepository.all().get().get(ran.nextInt(2)),
+					demandList.get(0).getAddress(),
+					Date.from(LocalDate.of(2022,ran.nextInt(11)+1,ran.nextInt(29)+1).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+					demandList,
+					materialRepository.availableMaterials().subList(1,ran.nextInt(2)+3),
+					teamRepository.teamAvailable().get().get(0),
+					com.app.gestionInterventions.models.work.intervention.Status.In_Progress,
+					null
+			)));
+
+		}
 	}
+
+
+	@Test
+	public void somTests() throws ResourceNotFoundException {
+		//System.out.println(demandRepository.findDemandsByStatus(com.app.gestionInterventions.models.work.demand.Status.In_Progress).size());
+		System.out.println(this.teamRepository.search("status", com.app.gestionInterventions.models.recources.team.Status.Available.name()).get().size());
+		System.out.println(this.materialRepository.availableMaterials().size());
+
+		System.out.println(interventionRepository.allmaterialUsed().size());
+		//System.out.println(userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_MEMBER).get()).get().size());
+		//System.out.println(userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get()).get().size());
+
+		//System.out.println(teamRepository.countTeamByStatus(com.app.gestionInterventions.models.recources.team.Status.Available));
+	}
+	@Test
+	public void testMailService() throws MessagingException {
+		String to = "hichembenhamouda11@gmail.com";
+		this.mailService.sendSimpleMail(to,"");
+	}
+
 	}
 
 

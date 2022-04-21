@@ -4,10 +4,13 @@ import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.work.demand.Demand;
+import com.app.gestionInterventions.models.work.demand.Status;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -92,4 +95,5 @@ public class DemandController implements IResource<Demand>  {
     public List<Demand> findByUser(@PathVariable(value = "id")String id) throws ResourceNotFoundException {
         return this.demandRepository.allByUser(id).orElseThrow(ResourceNotFoundException::new);
     }
+
 }

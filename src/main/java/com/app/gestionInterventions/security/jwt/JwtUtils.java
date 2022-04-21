@@ -1,7 +1,9 @@
 package com.app.gestionInterventions.security.jwt;
 
 import com.app.gestionInterventions.models.blackList.JwtBlackList;
+import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.repositories.blacklist.JwtBlackListRepository;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.app.gestionInterventions.security.services.UserDetailsImpl;
 import com.app.gestionInterventions.security.services.UserDetailsServiceImpl;
 import io.jsonwebtoken.*;
@@ -21,6 +23,8 @@ public class JwtUtils {
     UserDetailsServiceImpl userDetailsService;
     @Autowired
     JwtBlackListRepository jwtBlackListRepository;
+    @Autowired
+    UserRepositoryImpl userRepository;
     @Autowired
     public JwtUtils() {
     }
@@ -82,8 +86,10 @@ public class JwtUtils {
     public void logout(String token)
     {
 
-        //Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        this.jwtBlackListRepository.toTheBlackList(new JwtBlackList(token));
+        this.jwtBlackListRepository.toTheBlackList(new JwtBlackList(token,
+                this.userRepository.findById(((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId()).get(),
+                Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token.substring(7,token.length())).getBody().getIssuedAt(),
+                null));
     }
 }

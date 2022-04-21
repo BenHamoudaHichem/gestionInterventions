@@ -9,19 +9,16 @@ import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoProperties;
 import org.springframework.boot.autoconfigure.mongo.embedded.EmbeddedMongoAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.util.SocketUtils;
 
-import java.io.IOException;
-
 @Configuration
 @EnableAutoConfiguration(exclude = { EmbeddedMongoAutoConfiguration.class })
+
 public class MongoConfig {
 
     private static final String CONNECTION_STRING = "mongodb://127.0.0.1:27017";

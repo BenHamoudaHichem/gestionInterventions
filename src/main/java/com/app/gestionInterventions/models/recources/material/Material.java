@@ -10,6 +10,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 import java.util.Date;
+import java.util.Objects;
 
 @Document(collection = "materials")
 @JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",} )
@@ -90,5 +91,18 @@ public class Material {
 
     public void setDateOfPurchase(Date dateOfPurchase) {
         this.dateOfPurchase = dateOfPurchase;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Material material = (Material) o;
+        return getId().equals(material.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }

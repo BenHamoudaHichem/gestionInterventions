@@ -55,6 +55,7 @@ public class AuthController {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getIdentifier(), loginRequest.getPassword()));
 
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtUtils.generateJwtToken(authentication);
 
@@ -70,14 +71,30 @@ public class AuthController {
                 roles));
     }
     @GetMapping("/logout")
-    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('TEAMMANAGER') or hasRole('CUSTOMER')")
     public ResponseEntity logout(@RequestHeader("Authorization")String token)
     {
         if (jwtUtils.validateJwtToken(token.substring(7,token.length())))
         {
+
             jwtUtils.logout(token);
+            SecurityContextHolder.clearContext();
             return ResponseEntity.ok(new MessageResponse(HttpStatus.OK,"vous avez déconnecté"));
         }
         return ResponseEntity.ok(new MessageResponse(HttpStatus.UNAUTHORIZED,"erreur de déconnexion"));
+    }
+    @GetMapping("/current")
+    public ResponseEntity<MessageResponse>currentUser()
+    {
+
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username;
+        if (!(principal instanceof UserDetailsImpl)) {
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.UNAUTHORIZED,"Pas d'authentificateur !"));
+        } else {
+             username = ((UserDetailsImpl) principal).getUsername();
+        }
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.OK,
+                username));
     }
 }

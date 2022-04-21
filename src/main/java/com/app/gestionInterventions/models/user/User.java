@@ -128,7 +128,7 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return getId().equals(user.getId());
+        return this.identifier.equals(user.getIdentifier());
     }
 
     @Override

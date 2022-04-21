@@ -1,10 +1,11 @@
 package com.app.gestionInterventions.repositories.user;
 
+import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
-import com.app.gestionInterventions.models.work.intervention.Intervention;
-import com.app.gestionInterventions.models.work.intervention.category.Category;
+
+import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.mongodb.DBRef;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -35,6 +36,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
     private final MongoTemplate mongoTemplate;
 
 
+
     @Autowired
     public UserRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
@@ -53,13 +55,23 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
         Update update =new Update();
 
-        Set<DBRef> roles= user.getRoles().stream().map(x->new DBRef("roles",new ObjectId(x.getId()))).collect(Collectors.toSet());
-        update.set("firstName",user.getFirstName());
-        update.set("lastName",user.getLastName());
-        update.set("address",user.getAddress());
-        update.set("tel",user.getTel());
-        update.set("password",user.getPassword());
-        update.set("roles",roles);
+        if(!user.getFirstName().isEmpty()) {
+            update.set("firstName", user.getFirstName());
+        }
+        if(!user.getLastName().isEmpty()) {
+            update.set("lastName", user.getLastName());
+        }
+        if(user.getAddress()!=null) {
+            update.set("address", user.getAddress());
+        }
+        if(!user.getTel().isEmpty()) {
+            update.set("tel", user.getTel());
+        }
+        if(!user.getPassword().isEmpty()){update.set("password",user.getPassword());}
+        if(!user.getRoles().isEmpty()) {
+            Set<DBRef> roles= user.getRoles().stream().map(x->new DBRef("roles",new ObjectId(x.getId()))).collect(Collectors.toSet());
+            update.set("roles", roles);
+        }
         return this.mongoTemplate.updateFirst(query,update, User.class).getModifiedCount();
     }
 
@@ -93,7 +105,10 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
     @Override
     public Optional<User> findByIdentifier(String identifier) {
-        return Optional.of(this.search("identifier",identifier).get().get(0));
+
+        Query query= new Query();
+        query.addCriteria(Criteria.where("identifier").is(identifier));
+        return Optional.ofNullable(this.mongoTemplate.findOne(query,User.class));
     }
 
     @Override
@@ -117,7 +132,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
     public Optional<List<User>> findByRoLe(Role role)
     {
         Query query=new Query();
-        query.addCriteria(Criteria.where("roles.$id").is(new ObjectId(role.getId())));
+        query.addCriteria(Criteria.where("roles").all(new DBRef("roles",new ObjectId(role.getId()))));
         return Optional.ofNullable(this.mongoTemplate.find(query,User.class));
     }
     @Override
@@ -140,6 +155,14 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
         return this.search(key,value,true,"name") ;
     }
+
+    public long countByRole(Role role)
+    {
+        Query query=new Query();
+        query.addCriteria(Criteria.where("roles.$id").is(new ObjectId(role.getId())));
+        return this.mongoTemplate.count(query, User.class);
+    }
+
 
     private void checkIndex()
     {

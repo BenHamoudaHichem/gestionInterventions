@@ -2,12 +2,14 @@ package com.app.gestionInterventions.controllers;
 
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.models.recources.team.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
 import com.app.gestionInterventions.payload.request.RegisterUserRequest;
 import com.app.gestionInterventions.payload.response.MessageResponse;
+import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.app.gestionInterventions.security.jwt.JwtUtils;
@@ -36,6 +38,9 @@ public class UserController {
 
     @Autowired
     RoleRepository roleRepository;
+
+    @Autowired
+    TeamRepositoryImpl teamRepository;
 
     @Autowired
     PasswordEncoder encoder;
@@ -106,16 +111,66 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,registerRequest.getFirstName()+", Vous etes maintenant insrit avec nous"));
     }
     @PutMapping(value = "/{id}",consumes = {MediaType.APPLICATION_JSON_VALUE},produces = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<MessageResponse> updateOne (@PathVariable(value = "id") String id ,@RequestBody @Valid User user,BindingResult bindingResult) throws EntityValidatorException {
+    public ResponseEntity<MessageResponse> updateOne (@PathVariable(value = "id") String id ,@RequestBody @Valid RegisterUserRequest registerRequest,BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
+
+        registerRequest.getAdresse().setLocation(geocodeService.fromCity(registerRequest.getAdresse()));
+        User user = new User(
+                null,registerRequest.getFirstName(),
+                registerRequest.getLastName(),
+                registerRequest.getIdentifier(),
+                (registerRequest.getPassword()),
+                registerRequest.getAdresse(),
+                registerRequest.getTel()
+        );
+
+
+        Set<String> strRoles = registerRequest.getRoles();
+        Set<Role> roles = new HashSet<>();
+
+        if (strRoles == null) {
+            Role userRole = roleRepository.findByName(ERole.ROLE_CUSTOMER)
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            roles.add(userRole);
+        } else {
+            strRoles.forEach(role -> {
+                switch (role) {
+                    case "manager":
+                        Role managerRole = roleRepository.findByName(ERole.ROLE_MANAGER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(managerRole);
+
+                        break;
+                    case "member":
+                        Role memberRole = roleRepository.findByName(ERole.ROLE_MEMBER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(memberRole);
+
+                        break;
+                    case "tm":
+                        Role tmRole = roleRepository.findByName(ERole.ROLE_TEAMMANAGER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(tmRole);
+
+                        break;
+                    default:
+                        Role userRole = roleRepository.findByName(ERole.ROLE_CUSTOMER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(userRole);
+                }
+            });
+        }
+
+        user.setRoles(roles);
         if (this.userRepository.update(id,user)>0)
         {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"User modifiée avec succés"));
         }
-        return ResponseEntity.ok(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur de modification!"));
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Erreur de modification"));
+
     }
     @PostMapping("/file")
     public ResponseEntity<MessageResponse> create(@RequestParam("file") MultipartFile file) throws IOException {
@@ -135,6 +190,11 @@ public class UserController {
         {
             return this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
         }
+        if(args.containsKey("role")&&args.containsValue(Status.Available.name()))
+        {
+            return this.teamRepository.availableMembers();
+        }
+
         List<User> res = new ArrayList<User>();
         for (Map.Entry<String,String> e:
                 args.entrySet()) {

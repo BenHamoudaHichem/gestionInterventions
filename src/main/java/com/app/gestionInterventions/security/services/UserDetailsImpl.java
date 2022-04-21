@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +33,7 @@ public class UserDetailsImpl implements UserDetails {
     private String tel;
 
     private Collection<? extends GrantedAuthority> authorities;
+    private final LocalDateTime createdAt=LocalDateTime.now();
 
     public UserDetailsImpl(String id, String firstName, String lastName, String identifier, String password, Address address, String tel, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
@@ -94,7 +96,13 @@ public class UserDetailsImpl implements UserDetails {
         return identifier;
     }
 
+    public Address getAddress() {
+        return address;
+    }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
     public Address getAdresse() {
         return address;

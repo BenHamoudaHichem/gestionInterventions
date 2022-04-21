@@ -22,9 +22,7 @@ public class GeocodeService {
     public Location fromCity(Address address) {
         return Arrays.asList(this.restTemplate.getForEntity(this.generateUrl(address.addressZone()),Location[].class).getBody()).get(0);
     }
-    public Object romCity(Address address) {
-        return this.restTemplate.getForEntity(this.generateUrl(address.addressZone()),Object.class).getBody();
-    }
+
     private String generateUrl(String input)
     {
         return URL_Web_Service+"address="+input+"&key="+API_Key+"&format="+Format;

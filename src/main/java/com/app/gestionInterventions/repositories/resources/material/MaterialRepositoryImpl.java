@@ -1,6 +1,10 @@
 package com.app.gestionInterventions.repositories.resources.material;
 
+import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.recources.material.Material;
+
+import com.app.gestionInterventions.models.recources.material.Status;
+import com.app.gestionInterventions.models.work.intervention.Intervention;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -10,9 +14,12 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
@@ -96,6 +103,14 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
 
     @Override
     public Optional<List<Material>> search(String key, String value, boolean crescent, String factory) {
+        if(key.equals("status")&&value.equals("Available"))
+        {
+            try {
+                return Optional.of(this.availableMaterials());
+            } catch (ResourceNotFoundException e) {
+                return Optional.ofNullable(null);
+            }
+        }
         Sort.Direction direction = Sort.Direction.ASC;
         if(!crescent)
         {
@@ -123,5 +138,17 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     public  void dropCollection()
     {
         this.mongoTemplate.dropCollection(Material.class);
+    }
+
+    public long countMaterialByStatus(Status status)
+    {
+        Query query= new Query();
+        query.addCriteria(Criteria.where("status").is(status.name()));
+        return this.mongoTemplate.count(query, Material.class);
+    }
+    public List<Material>availableMaterials() throws ResourceNotFoundException {
+        return this.all().orElseThrow(ResourceNotFoundException::new).stream().filter(x->!(
+                 mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialList().stream()).collect(Collectors.toList())
+                 .contains(x))&&x.getStatus().equals(Status.Functional)).collect(Collectors.toList());
     }
 }

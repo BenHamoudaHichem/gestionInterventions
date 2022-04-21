@@ -1,6 +1,7 @@
 package com.app.gestionInterventions.repositories.work.demand;
 
 import com.app.gestionInterventions.models.work.demand.Demand;
+import com.app.gestionInterventions.models.work.demand.Status;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -130,6 +131,35 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
     {
         this.mongoTemplate.dropCollection(Demand.class);
     }
+
+
+    public long CountDemandsByStatus(Status status)
+    {
+        Query query= new Query();
+        if (status == null) {
+            return this.mongoTemplate.count(query,Demand.class);
+        }
+        query.addCriteria(Criteria.where("status").is(status.name()));
+        return this.mongoTemplate.count(query,Demand.class);
+    }
+    public long countUserDemandsByStatus(String id,Status status)
+    {
+        Query query= new Query();
+
+        query.addCriteria(Criteria.where("status").is(status.name()));
+        query.addCriteria(Criteria.where("user.$id").is(new ObjectId(id)));
+        return this.mongoTemplate.count(query,Demand.class);
+    }
+
+    public List<Demand> findDemandsByStatus(Status status)
+    {
+        Query query= new Query();
+        query.addCriteria(Criteria.where("status").is(status));
+        return this.mongoTemplate.find(query,Demand.class);
+    }
+
     private boolean collectionIsEmpty(){return this.mongoTemplate.collectionExists(Demand.class);}
+
+
 
 }

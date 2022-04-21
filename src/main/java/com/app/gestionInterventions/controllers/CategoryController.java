@@ -2,6 +2,7 @@ package com.app.gestionInterventions.controllers;
 
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
@@ -9,9 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,5 +68,9 @@ public class CategoryController implements IResource<Category> {
     @Override
     public Category findById(String id) throws ResourceNotFoundException {
         return this.categoryRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+    }
+    @GetMapping("/{id}/interventions")
+    public List<Intervention> interventionsPerCategory(@PathVariable(value = "id")String id) throws ResourceNotFoundException {
+        return this.categoryRepository.findInterventionsByCategory(id).orElseThrow(ResourceNotFoundException::new);
     }
 }

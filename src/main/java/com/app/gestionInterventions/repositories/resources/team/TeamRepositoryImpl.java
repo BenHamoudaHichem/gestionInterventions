@@ -1,14 +1,15 @@
 package com.app.gestionInterventions.repositories.resources.team;
 
+
+import com.app.gestionInterventions.models.recources.team.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
+
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
-import com.app.gestionInterventions.models.work.intervention.Status;
-import com.app.gestionInterventions.models.work.intervention.category.Category;
+
 import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
-import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.mongodb.DBRef;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -33,7 +34,7 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 public class TeamRepositoryImpl implements TeamRepositoryCustom{
     private final MongoTemplate mongoTemplate;
 
-    UserRepositoryImpl userRepository;
+    private UserRepositoryImpl userRepository;
     @Autowired
     public TeamRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
@@ -50,6 +51,7 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
         team.getManager().setRoles(new HashSet<Role>(Arrays.asList(role)));
 
         this.userRepository.update(team.getManager().getId(),team.getManager());
+        team.getMembers().removeIf(x->x.equals(team.getManager()));
         return Optional.ofNullable(this.mongoTemplate.save(team));
     }
 
@@ -102,21 +104,16 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
     @Override
     public boolean isAvailable(Team team) {
         Query query= new Query();
-        query.addCriteria(new Criteria("team").is(team).and("status").ne(Status.Completed));
+        query.addCriteria( Criteria.where("status").is(Status.Available));
         return !this.mongoTemplate.exists(query, Intervention.class);
     }
 
     @Override
     public Optional<List<Team>> teamAvailable() {
         Query query= new Query();
-        query.addCriteria(new Criteria("status").ne(Status.Completed));
-        List<Team> teams = new ArrayList<Team>();
-        teams = this.mongoTemplate.findAll(Team.class);
-        teams.removeAll(
-                this.mongoTemplate.find(query,Intervention.class).stream()
-                        .map(intervention -> intervention.getTeam()).collect(Collectors.toList())
-        );
-        return Optional.of(teams);
+        query.addCriteria(Criteria.where("status").is(Status.Available));
+
+        return Optional.of(this.mongoTemplate.find(query,Team.class));
     }
 
     @Override
@@ -135,5 +132,39 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
         this.mongoTemplate.indexOps(Team.class).ensureIndex(
                 new CompoundIndexDefinition(new Document()).on("name", Sort.Direction.ASC).unique()
         );
+    }
+    public long countTeamByStatus(com.app.gestionInterventions.models.recources.team.Status status)
+    {
+        Query query= new Query();
+
+        if (status == null) {
+            return this.mongoTemplate.count(query,Team.class);
+        }
+        query.addCriteria(Criteria.where("status").is(status));
+        return this.mongoTemplate.count(query, Team.class);
+    }
+    public List<User> allMembers(){
+        if(!mongoTemplate.collectionExists(Team.class))
+        {
+            return new ArrayList<User>();
+        }
+        return this.mongoTemplate.findAll(Team.class).stream().map(x->x.getMembers()).flatMap(List::stream).collect(Collectors.toList());
+    }
+    public List<User> availableMembers(){
+        Query query= new Query();query.addCriteria(new Criteria()
+                .orOperator(Criteria.where("name").is(ERole.ROLE_TEAMMANAGER.name()),
+                        Criteria.where("name").is(ERole.ROLE_MEMBER.name())));
+        Query query1= new Query();
+        query1.addCriteria(Criteria.where("roles").in(mongoTemplate.find(query,Role.class).stream().map(x->new DBRef("roles",new ObjectId(x.getId()))).collect(Collectors.toList())));
+
+        if(!mongoTemplate.collectionExists(Team.class))
+        {
+            return mongoTemplate.find(query1,User.class);
+        }
+       return this.mongoTemplate.find(query1,User.class).stream().filter(p->!(this.mongoTemplate.findAll(Team.class)
+                        .parallelStream().collect(ArrayList<User>::new,(x,y)->{x.addAll(y.getMembers());x.add(y.getManager());}
+                        ,ArrayList::addAll).contains(p))
+        ).collect(Collectors.toList());
+
     }
 }

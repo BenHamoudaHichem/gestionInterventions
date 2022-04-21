@@ -3,7 +3,9 @@ package com.app.gestionInterventions.security;
 import com.app.gestionInterventions.security.jwt.AuthEntryPointJwt;
 import com.app.gestionInterventions.security.jwt.AuthTokenFilter;
 import com.app.gestionInterventions.security.services.UserDetailsServiceImpl;
+import com.app.gestionInterventions.services.password.AESPasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,7 +15,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -29,6 +30,9 @@ public class WebSecurityConfig  extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
+
+    @Value("${key}")
+    String key;
 
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
@@ -48,7 +52,7 @@ public class WebSecurityConfig  extends WebSecurityConfigurerAdapter {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new AESPasswordEncoder();
     }
 
     @Override
@@ -57,7 +61,7 @@ public class WebSecurityConfig  extends WebSecurityConfigurerAdapter {
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests().antMatchers("/api/users/**").permitAll()
-                .antMatchers("/api/test/**").permitAll()
+                .antMatchers("/api/services/**").permitAll()
                 .antMatchers("/api/materials/**").permitAll()
                 .antMatchers("/api/demands/**").permitAll()
                 .antMatchers("/api/teams/**").permitAll()

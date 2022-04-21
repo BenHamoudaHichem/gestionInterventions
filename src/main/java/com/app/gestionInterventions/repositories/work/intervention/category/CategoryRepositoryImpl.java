@@ -3,6 +3,7 @@ package com.app.gestionInterventions.repositories.work.intervention.category;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -93,7 +94,9 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
     }
     @Override
     public Optional<List<Intervention>> findInterventionsByCategory(String id) {
-        return Optional.empty();
+        Query query=new Query();
+        query.addCriteria(Criteria.where("category.$id").is(new ObjectId(id)));
+        return Optional.ofNullable(this.mongoTemplate.find(query,Intervention.class));
     }
 
     public boolean create(List<Category> categoryList) {
