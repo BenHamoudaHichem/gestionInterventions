@@ -67,7 +67,6 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         if(!user.getTel().isEmpty()) {
             update.set("tel", user.getTel());
         }
-        if(!user.getPassword().isEmpty()){update.set("password",user.getPassword());}
         if(!user.getRoles().isEmpty()) {
             Set<DBRef> roles= user.getRoles().stream().map(x->new DBRef("roles",new ObjectId(x.getId()))).collect(Collectors.toSet());
             update.set("roles", roles);
@@ -161,6 +160,17 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         Query query=new Query();
         query.addCriteria(Criteria.where("roles.$id").is(new ObjectId(role.getId())));
         return this.mongoTemplate.count(query, User.class);
+    }
+
+    public long changePassword(User user)
+    {
+        Query query= new Query();
+        query.addCriteria(Criteria.where("_id").is(user.getId()));
+        Update update =new Update();
+        update.set("password", user.getPassword());
+
+        return this.mongoTemplate.updateFirst(query,update, User.class).getModifiedCount();
+
     }
 
 

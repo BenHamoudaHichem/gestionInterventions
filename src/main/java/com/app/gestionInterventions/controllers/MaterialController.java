@@ -9,6 +9,7 @@ import com.app.gestionInterventions.services.FileUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +29,7 @@ public class MaterialController implements IResource<Material> {
     FileUploadService fileStorageService;
 
     @Override
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> create(Material material, BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
@@ -41,6 +43,7 @@ public class MaterialController implements IResource<Material> {
     }
 
     @Override
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> update (String id,Material material, BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
@@ -54,6 +57,7 @@ public class MaterialController implements IResource<Material> {
     }
 
     @Override
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> delete(String id) {
         if (this.materialRepository.detele(id)>0)
         {

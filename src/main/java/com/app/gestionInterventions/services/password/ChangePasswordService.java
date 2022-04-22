@@ -23,7 +23,7 @@ public class ChangePasswordService {
             throw new BadCredentialsException("Votre mot de passe est incorrect !");
         }
         currentUser.setPassword(passwordEncoder.encode(passwordRequest.newPassword));
-        return userRepository.update(currentUser.getId(),currentUser)>0;
+        return userRepository.changePassword(currentUser)>0;
     }
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PasswordRequest{

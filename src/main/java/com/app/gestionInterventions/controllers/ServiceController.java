@@ -8,6 +8,7 @@ import com.app.gestionInterventions.services.password.ChangePasswordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,11 +25,13 @@ public class ServiceController {
     @Autowired
     HomeService homeService;
     @GetMapping("/homeLoader/manager")
+    @PreAuthorize("hasRole('MANAGER')")
     public HomeService.HomeManagerLoader homeManagerLoader()
     {
         return this.homeService.homeManagerLoader();
     }
     @GetMapping("/homeLoader/customer")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public HomeService.HomeCustomerLoader homeCustomerLoader()
     {
         return this.homeService.homeCustomerLoader();

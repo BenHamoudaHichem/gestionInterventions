@@ -84,7 +84,14 @@ class GestionInterventionsApplicationTests {
 	static void example(@Autowired final MongoTemplate mongoTemplate) {
 		Assertions.assertNotNull(mongoTemplate.getDb());
 	}
-
+	@Test
+	public void createRole()
+	{
+		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_CUSTOMER)));
+		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_MANAGER)));
+		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_MEMBER)));
+		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_TEAMMANAGER)));
+	}
 	@Test
 	void createMaterial()
 	{
@@ -109,8 +116,15 @@ class GestionInterventionsApplicationTests {
 
 
 	}
+
 	@Test
-	public void createUser()
+	public void createCategory(){
+		Assertions.assertNotNull(this.categoryRepository.create(new ArrayList<Category>(
+				Arrays.asList(new Category(null,"Traveaux publique"),
+						new Category(null,"Fuites"))
+		)));}
+	@Test
+	public void createCustomer()
 	{
 		Faker faker=new Faker() ;
 		FakeValuesService fakeValuesService = new FakeValuesService(
@@ -127,31 +141,56 @@ class GestionInterventionsApplicationTests {
 					getAddress(faker),
 					fakeValuesService.regexify("[0-9]{8}")
 					);
+			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_MEMBER).get())));
+			Assertions.assertNotNull(this.userRepository.create(user));
+
+		}
+	}
+	@Test
+	public void createManager()
+	{
+		Faker faker=new Faker() ;
+		FakeValuesService fakeValuesService = new FakeValuesService(
+				new Locale("fr", "FRANCE", "WIN"), new RandomService());
+		User user;
+		for (int i = 0; i <20 ; i++) {
+			user=new User(
+					null,
+					faker.name().firstName(),
+					faker.name().lastName(),
+					"22334455",
+					passwordEncoder.encode("12345678"),
+					getAddress(faker),
+					fakeValuesService.regexify("[0-9]{8}")
+			);
+			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_MANAGER).get())));
+			Assertions.assertNotNull(this.userRepository.create(user));
+
+		}
+	}
+	@Test
+	public void createMembers()
+	{
+		Faker faker=new Faker() ;
+		FakeValuesService fakeValuesService = new FakeValuesService(
+				new Locale("fr", "FRANCE", "WIN"), new RandomService());
+		User user;
+		for (int i = 0; i <20 ; i++) {
+			user=new User(
+					null,
+					faker.name().firstName(),
+					faker.name().lastName(),
+					fakeValuesService.regexify("[1-9]{8}"),
+					passwordEncoder.encode(fakeValuesService.regexify("[a-z0-9]{8}")),
+					getAddress(faker),
+					fakeValuesService.regexify("[0-9]{8}")
+			);
 			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_CUSTOMER).get())));
 			Assertions.assertNotNull(this.userRepository.create(user));
 
 		}
 	}
-	private Address getAddress(Faker faker)
-	{
-		Random ran = new Random();
-		int x = ran.nextInt(24) ;
 
-		String state=this.tnCitiesClient.getStates().getData().get(ran.nextInt(24));
-
-		List<String> cities=this.tnCitiesClient.getCitiesByState(state).getData();
-		String city=cities.get(ran.nextInt(cities.size()));
-		Address address= new Address(
-				faker.address().zipCode(),
-				faker.address().streetName(),
-				city,
-				state,
-				"Tunisie",
-				null
-		);
-        address.setLocation(geocodeService.fromCity(address));
-        return address;
-	}
 
 	@Test
 	public void createTeam()
@@ -170,20 +209,9 @@ class GestionInterventionsApplicationTests {
 			Assertions.assertNotNull(team);
 		}
 
-
-
-
-
 		}
 
-		@Test
-	public void createRole()
-		{
-			Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_CUSTOMER)));
-			Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_MANAGER)));
-			Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_MEMBER)));
-			Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_TEAMMANAGER)));
-		}
+
 	@Test
 	public void createDemand() {
 		Demand demand;
@@ -207,15 +235,7 @@ class GestionInterventionsApplicationTests {
 			Assertions.assertNotNull(demandRepository.create(demand));
 		}
 	}
-	@Test
-	public void createCategory(){
-		Assertions.assertNotNull(this.categoryRepository.create(new ArrayList<Category>(
-				Arrays.asList(new Category(null,"Traveaux publique"),
-				new Category(null,"Fuites"))
-		)));
 
-
-	}
 
 
 	@Test
@@ -264,7 +284,26 @@ class GestionInterventionsApplicationTests {
 		String to = "hichembenhamouda11@gmail.com";
 		this.mailService.sendSimpleMail(to,"");
 	}
+	private Address getAddress(Faker faker)
+	{
+		Random ran = new Random();
+		int x = ran.nextInt(24) ;
 
+		String state=this.tnCitiesClient.getStates().getData().get(ran.nextInt(24));
+
+		List<String> cities=this.tnCitiesClient.getCitiesByState(state).getData();
+		String city=cities.get(ran.nextInt(cities.size()));
+		Address address= new Address(
+				faker.address().zipCode(),
+				faker.address().streetName(),
+				city,
+				state,
+				"Tunisie",
+				null
+		);
+		address.setLocation(geocodeService.fromCity(address));
+		return address;
+	}
 	}
 
 

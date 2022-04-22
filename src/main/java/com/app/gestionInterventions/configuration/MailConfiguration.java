@@ -1,10 +1,11 @@
 package com.app.gestionInterventions.configuration;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.SimpleMailMessage;
 
 import java.math.BigInteger;
-
+@Configuration
 public class MailConfiguration {
     @Bean
     public SimpleMailMessage templateSimpleMessage() {
@@ -16,4 +17,5 @@ public class MailConfiguration {
         BigInteger bigInteger2;
         return message;
     }
+
 }

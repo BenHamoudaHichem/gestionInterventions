@@ -18,8 +18,7 @@ public class TNCitiesClient extends WebServiceGatewaySupport {
     {
         Tnresponse tnresponse = (Tnresponse) getWebServiceTemplate()
                 .marshalSendAndReceive("http://localhost:8081/ws/cities",new GetAllStatesRequest(),
-                        new SoapActionCallback(
-                                "http://spring.io/guides/gs-producing-web-service/getAllStatesRequest"));
+                        new SoapActionCallback("http://spring.io/guides/gs-producing-web-service/getAllStatesRequest"));
 
         System.out.println(tnresponse);
         return tnresponse;

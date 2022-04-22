@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.Properties;
 
 @Service
-public class MailService {
+public class  MailService {
     @Autowired
     public SimpleMailMessage template;
 
