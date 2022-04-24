@@ -23,6 +23,7 @@ import com.app.gestionInterventions.services.MailService;
 import com.app.gestionInterventions.services.password.AESPasswordEncoder;
 import com.app.gestionInterventions.services.GeocodeService;
 import com.app.gestionInterventions.services.TNCitiesClient;
+import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import com.github.javafaker.Faker;
 import com.github.javafaker.service.FakeValuesService;
 import com.github.javafaker.service.RandomService;
@@ -48,6 +49,7 @@ class GestionInterventionsApplicationTests {
 	PasswordEncoder passwordEncoder;
 
 	MailService mailService= new MailService();
+	DemandStatistic demandStatistic= new DemandStatistic();
 
 	@Autowired
 	TNCitiesClient tnCitiesClient;
@@ -269,16 +271,8 @@ class GestionInterventionsApplicationTests {
 
 	@Test
 	public void somTests() throws ResourceNotFoundException {
-		//System.out.println(demandRepository.findDemandsByStatus(com.app.gestionInterventions.models.work.demand.Status.In_Progress).size());
-		System.out.println(this.teamRepository.search("status", com.app.gestionInterventions.models.recources.team.Status.Available.name()).get().size());
-		System.out.println(this.materialRepository.availableMaterials().size());
-
-		System.out.println(interventionRepository.allmaterialUsed().size());
-		//System.out.println(userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_MEMBER).get()).get().size());
-		//System.out.println(userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get()).get().size());
-
-		//System.out.println(teamRepository.countTeamByStatus(com.app.gestionInterventions.models.recources.team.Status.Available));
-	}
+		System.out.println(this.demandStatistic.getDemandPerYearList());
+			}
 	@Test
 	public void testMailService() throws MessagingException {
 		String to = "hichembenhamouda11@gmail.com";

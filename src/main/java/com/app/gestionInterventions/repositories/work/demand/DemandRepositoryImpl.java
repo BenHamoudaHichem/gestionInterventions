@@ -3,6 +3,7 @@ package com.app.gestionInterventions.repositories.work.demand;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.demand.Status;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
 @Repository
 public class DemandRepositoryImpl implements DemandRepositoryCustom{
@@ -157,7 +158,17 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
         query.addCriteria(Criteria.where("status").is(status));
         return this.mongoTemplate.find(query,Demand.class);
     }
+    public List<DemandStatistic.DemandPerYear> findStatsYear()
+    {
+        ProjectionOperation projectionOperation=project("sum").and("month").previousOperation();
+        GroupOperation groupOperation= group("month").count().as("sum");
+        Aggregation agg = newAggregation(project().andExpression("month(createdAt)").as("month"),
+                groupOperation,projectionOperation);
 
+        AggregationResults<DemandStatistic.DemandPerYear> result =
+                mongoTemplate.aggregate(agg, "demands", DemandStatistic.DemandPerYear.class);
+        return result.getMappedResults();
+    }
     private boolean collectionIsEmpty(){return this.mongoTemplate.collectionExists(Demand.class);}
 
 

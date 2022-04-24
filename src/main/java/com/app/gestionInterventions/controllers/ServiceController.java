@@ -5,6 +5,7 @@ import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.services.HomeService;
 import com.app.gestionInterventions.services.TNCitiesClient;
 import com.app.gestionInterventions.services.password.ChangePasswordService;
+import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,9 @@ public class ServiceController {
     TNCitiesClient tnCitiesClient;
     @Autowired
     HomeService homeService;
+    @Autowired
+    DemandStatistic demandStatistic;
+
     @GetMapping("/homeLoader/manager")
     @PreAuthorize("hasRole('MANAGER')")
     public HomeService.HomeManagerLoader homeManagerLoader()
@@ -42,11 +46,18 @@ public class ServiceController {
         return this.tnCitiesClient.getStates().getData();
     }
     @GetMapping("/states/{state}")
-    public List<String> test(@PathVariable(value = "state")String state)
+    public List<String> cities(@PathVariable(value = "state")String state)
     {
         return this.tnCitiesClient.getCitiesByState(state).getData();
     }
-    @PutMapping("password/change")
+    @GetMapping("/stats/demands")
+    public List<DemandStatistic.DemandPerYear>  demandPerYears()
+    {
+        return this.demandStatistic.getDemandPerYearList();
+    }
+
+
+    @PutMapping("/password/change")
     public ResponseEntity<MessageResponse> changePassword(@RequestBody ChangePasswordService.PasswordRequest passwordRequest) throws ResourceNotFoundException {
         if(this.changePasswordService.doUpdate(passwordRequest)){
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre mot de passe est modifiée avec succes"));
