@@ -19,6 +19,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
@@ -98,9 +99,21 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
         query.addCriteria(Criteria.where("category.$id").is(new ObjectId(id)));
         return Optional.ofNullable(this.mongoTemplate.find(query,Intervention.class));
     }
+    public long countInterventionsByCategory(String id) {
+        Query query=new Query();
+        query.addCriteria(Criteria.where("category.$id").is(new ObjectId(id)));
+        return this.mongoTemplate.count(query,Intervention.class);
+    }
+    public List<Category> create(List<Category> categoryList) {
+        return categoryList.stream().map(category -> {checkIndex();
 
-    public boolean create(List<Category> categoryList) {
-        return this.mongoTemplate.insertAll(categoryList).size()>0;
+            try {
+                wait(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return this.create(category).orElse(null);
+        }).collect(Collectors.toList());
     }
 
     @Override

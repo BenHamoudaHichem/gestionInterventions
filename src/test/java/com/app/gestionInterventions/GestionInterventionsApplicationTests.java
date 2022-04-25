@@ -24,6 +24,7 @@ import com.app.gestionInterventions.services.password.AESPasswordEncoder;
 import com.app.gestionInterventions.services.GeocodeService;
 import com.app.gestionInterventions.services.TNCitiesClient;
 import com.app.gestionInterventions.services.statistics.DemandStatistic;
+import com.app.gestionInterventions.services.statistics.MaterialStatistic;
 import com.github.javafaker.Faker;
 import com.github.javafaker.service.FakeValuesService;
 import com.github.javafaker.service.RandomService;
@@ -50,6 +51,8 @@ class GestionInterventionsApplicationTests {
 
 	MailService mailService= new MailService();
 	DemandStatistic demandStatistic= new DemandStatistic();
+
+    MaterialStatistic materialStatistic=new MaterialStatistic();
 
 	@Autowired
 	TNCitiesClient tnCitiesClient;
@@ -122,8 +125,9 @@ class GestionInterventionsApplicationTests {
 	@Test
 	public void createCategory(){
 		Assertions.assertNotNull(this.categoryRepository.create(new ArrayList<Category>(
-				Arrays.asList(new Category(null,"Traveaux publique"),
-						new Category(null,"Fuites"))
+				Arrays.asList(new Category(null,"Traveaux publique")
+						//new Category(null,"Fuites")
+						)
 		)));}
 	@Test
 	public void createCustomer()
@@ -271,7 +275,7 @@ class GestionInterventionsApplicationTests {
 
 	@Test
 	public void somTests() throws ResourceNotFoundException {
-		System.out.println(this.demandStatistic.getDemandPerYearList());
+		System.out.println(this.materialStatistic.pieStatus());
 			}
 	@Test
 	public void testMailService() throws MessagingException {
