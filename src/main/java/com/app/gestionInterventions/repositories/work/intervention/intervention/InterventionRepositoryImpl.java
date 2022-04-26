@@ -47,7 +47,10 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     public Optional<Intervention> create(Intervention intervention)
     {
         this.checkIndex();
-        Team team=intervention.getTeam();
+        Query query= new Query();
+        query.addCriteria(new Criteria("_id").is(intervention.getTeam().getId()));
+
+        Team team=this.mongoTemplate.findOne(query,Team.class);
         team.setStatus(Status.Unavailable);
         teamRepository.update(team.getId(),team);
         ArrayList<Demand> demands=new ArrayList<Demand>(intervention.getDemandList());

@@ -40,14 +40,13 @@ public class TeamController implements IResource<Team> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
-        team.getManager().setRoles(new HashSet<Role>(Arrays.asList(this.roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get())));
-        userRepository.update(team.getManager().getId(),team.getManager());
         if (this.teamRepository.create(team).isPresent())
         {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Equipe enregistrée avec succés"));
         }
+        System.out.println(team);
         return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur d'enregistrer de cet équipe"));
-    }
+   }
 
     @Override
     public ResponseEntity<MessageResponse> update(String id, Team team, BindingResult bindingResult) throws EntityValidatorException {

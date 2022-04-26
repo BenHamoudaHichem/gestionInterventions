@@ -5,26 +5,30 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "teams")
 @JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",})
-public class Team {
+public class Team implements Serializable {
     @Id
     private String id;
     @NotBlank
     @Size(min = 2,max = 60)
     private String name;
-    @DBRef
+    @DBRef(lazy=true)
     private User manager;
-    @DBRef
+    @DBRef(lazy=true)
     private List<User> members;
+
     private Status status;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)

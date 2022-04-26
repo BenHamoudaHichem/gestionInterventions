@@ -15,7 +15,10 @@ public class  MailService {
     @Autowired
     private JavaMailSender emailSender;
    private String to = "takwaassaibi08@gmail.com";
-public void send(Email email) throws MessagingException {
+
+
+   public void send(Email email) throws MessagingException {
+
     MimeMessage message = emailSender.createMimeMessage();
     MimeMessageHelper helper = new MimeMessageHelper(message, true);
     helper.setSubject("Email from arabIntervent");
@@ -82,31 +85,4 @@ public void send(Email email) throws MessagingException {
         }
     }
 
-/*
-
-
-    public void sendSimpleMessage(String to, String subject, String text) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(text);
-        emailSender.send(message);
-    }
-
- /*  @Autowired
-    public SimpleMailMessage template;
-
-    public void sendSimpleMail(){
-
-    }
- public void RecieveSimpleMessage(String to,String from, String subject, String text) {
-     SimpleMailMessage message = new SimpleMailMessage();
-     message.setTo(to);
-     message.setFrom(from);
-     message.setSubject(subject);
-     message.setText(text);
-     message.setSentDate(new Date());
-     emailSender.send(message);
- }
-*/
 }

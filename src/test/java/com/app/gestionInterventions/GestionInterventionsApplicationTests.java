@@ -41,7 +41,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.mail.MessagingException;
-import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -53,7 +52,6 @@ class GestionInterventionsApplicationTests {
 	PasswordEncoder passwordEncoder;
 	@Autowired
 	MailService mailService;
-
 	DemandStatistic demandStatistic= new DemandStatistic();
 
     MaterialStatistic materialStatistic=new MaterialStatistic();
@@ -282,15 +280,9 @@ class GestionInterventionsApplicationTests {
 		System.out.println(this.materialStatistic.pieStatus());
 	}
 	@Test
-	public void testMailService() throws MessagingException, MalformedURLException {
-	String mail = "hichembenhamouda11@gmail.com";
-	String name="Hichem Ben Hamouda";
-	String tel="54252445";
-	String des="Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestias obcaecati quia neque velit eaque illum laborum, nihil blanditiis, laudantium labore quidem tempora pariatur ex ipsam voluptate, aliquid sit animi veniam.\n";
+	public void testMailService() throws SMTPSendFailedException{
+	String to = "hichembenhamouda11@gmail.com";
 
-	//	this.mailService.sendSimpleMessage(to,"Email from GestIntervent","Email provided for test");
-	//	String to = "takwaassaibi08@gmail.com";
-		//this.mailService.send(name,tel,mail,des);
 	}
 	private Address getAddress(Faker faker)
 	{

@@ -48,11 +48,13 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
         Role role=this.mongoTemplate.findOne(query,Role.class);
 
         this.checkIndex();
-        team.getManager().setRoles(new HashSet<Role>(Arrays.asList(role)));
+        User manager =userRepository.findById(team.getManager().getId()).get();
 
-        this.userRepository.update(team.getManager().getId(),team.getManager());
-        team.getMembers().removeIf(x->x.equals(team.getManager()));
-        return Optional.ofNullable(this.mongoTemplate.save(team));
+        manager.setRoles(new HashSet<Role>(Arrays.asList(role)));
+
+        this.userRepository.update(manager.getId(),manager);
+        team.getMembers().removeIf(x->x.equals(manager));
+        return Optional.ofNullable(this.mongoTemplate.insert(team));
     }
 
     @Override
@@ -60,6 +62,7 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
 
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
+
 
         Update update =new Update();
         if (team.getMembers().contains(team.getManager())){
