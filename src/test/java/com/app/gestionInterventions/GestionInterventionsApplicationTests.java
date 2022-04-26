@@ -1,5 +1,6 @@
 package com.app.gestionInterventions;
 
+import com.app.gestionInterventions.configuration.MailConfiguration;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.recources.material.Material;
@@ -29,6 +30,7 @@ import com.github.javafaker.Faker;
 import com.github.javafaker.service.FakeValuesService;
 import com.github.javafaker.service.RandomService;
 import com.mongodb.assertions.Assertions;
+import com.sun.mail.smtp.SMTPSendFailedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +41,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.mail.MessagingException;
+import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -48,8 +51,9 @@ import java.util.*;
 class GestionInterventionsApplicationTests {
 
 	PasswordEncoder passwordEncoder;
+	@Autowired
+	MailService mailService;
 
-	MailService mailService= new MailService();
 	DemandStatistic demandStatistic= new DemandStatistic();
 
     MaterialStatistic materialStatistic=new MaterialStatistic();
@@ -58,7 +62,7 @@ class GestionInterventionsApplicationTests {
 	TNCitiesClient tnCitiesClient;
 
 
-    GeocodeService geocodeService=new GeocodeService();
+	GeocodeService geocodeService=new GeocodeService();
 
 	MaterialRepositoryImpl materialRepository;
 	UserRepositoryImpl userRepository;
@@ -105,7 +109,7 @@ class GestionInterventionsApplicationTests {
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("en-GB"), new RandomService());
 		for (int i = 0; i <12 ; i++) {
-			 faker = new Faker();
+			faker = new Faker();
 			material=new Material(
 					null,
 					faker.commerce().material(),
@@ -146,7 +150,7 @@ class GestionInterventionsApplicationTests {
 					passwordEncoder.encode("12345678"),
 					getAddress(faker),
 					fakeValuesService.regexify("[0-9]{8}")
-					);
+			);
 			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_MEMBER).get())));
 			Assertions.assertNotNull(this.userRepository.create(user));
 
@@ -191,7 +195,7 @@ class GestionInterventionsApplicationTests {
 					getAddress(faker),
 					fakeValuesService.regexify("[0-9]{8}")
 			);
-			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_CUSTOMER).get())));
+			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get())));
 			Assertions.assertNotNull(this.userRepository.create(user));
 
 		}
@@ -215,7 +219,7 @@ class GestionInterventionsApplicationTests {
 			Assertions.assertNotNull(team);
 		}
 
-		}
+	}
 
 
 	@Test
@@ -276,11 +280,17 @@ class GestionInterventionsApplicationTests {
 	@Test
 	public void somTests() throws ResourceNotFoundException {
 		System.out.println(this.materialStatistic.pieStatus());
-			}
+	}
 	@Test
-	public void testMailService() throws MessagingException {
-		String to = "hichembenhamouda11@gmail.com";
-		this.mailService.sendSimpleMail(to,"");
+	public void testMailService() throws MessagingException, MalformedURLException {
+	String mail = "hichembenhamouda11@gmail.com";
+	String name="Hichem Ben Hamouda";
+	String tel="54252445";
+	String des="Lorem ipsum dolor sit amet consectetur adipisicing elit. Molestias obcaecati quia neque velit eaque illum laborum, nihil blanditiis, laudantium labore quidem tempora pariatur ex ipsam voluptate, aliquid sit animi veniam.\n";
+
+	//	this.mailService.sendSimpleMessage(to,"Email from GestIntervent","Email provided for test");
+	//	String to = "takwaassaibi08@gmail.com";
+		//this.mailService.send(name,tel,mail,des);
 	}
 	private Address getAddress(Faker faker)
 	{
@@ -302,6 +312,6 @@ class GestionInterventionsApplicationTests {
 		address.setLocation(geocodeService.fromCity(address));
 		return address;
 	}
-	}
+}
 
 

@@ -1,21 +1,21 @@
 package com.app.gestionInterventions.controllers;
 
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.services.HomeService;
+import com.app.gestionInterventions.services.MailService;
 import com.app.gestionInterventions.services.TNCitiesClient;
 import com.app.gestionInterventions.services.password.ChangePasswordService;
 import com.app.gestionInterventions.services.statistics.*;
-import org.apache.tomcat.websocket.PojoClassHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.mail.MessagingException;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 @CrossOrigin(origins = "*",maxAge = 36000)
 @RestController
@@ -36,7 +36,8 @@ public class ServiceController {
     TeamStatistic teamStatistic;
     @Autowired
     InterventionStatistic interventionStatistic;
-
+    @Autowired
+    MailService mailService;
     @GetMapping("/homeLoader/manager")
     @PreAuthorize("hasRole('MANAGER')")
     public HomeService.HomeManagerLoader homeManagerLoader()
@@ -59,8 +60,6 @@ public class ServiceController {
     {
         return this.tnCitiesClient.getCitiesByState(state).getData();
     }
-
-
 
     @PutMapping("/password/change")
     public ResponseEntity<MessageResponse> changePassword(@RequestBody ChangePasswordService.PasswordRequest passwordRequest) throws ResourceNotFoundException {
@@ -89,6 +88,16 @@ public class ServiceController {
     public List<PairCustom> pieCategories()
     {
         return this.interventionStatistic.pieCategory();
+    }
+    @PostMapping("/contact")
+    public  ResponseEntity<MessageResponse> contact(@RequestBody MailService.Email email)  {
+        try {
+            this.mailService.send(email);
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"message envoyé avec succés"));
+        }
+        catch (MessagingException e) {
+            return  ResponseEntity.ok(new MessageResponse(HttpStatus.BAD_REQUEST,"erreur d'envoi un mail : "+e.getMessage()));
+        }
     }
 
 }
