@@ -6,15 +6,19 @@ import com.app.gestionInterventions.services.HomeService;
 import com.app.gestionInterventions.services.MailService;
 import com.app.gestionInterventions.services.TNCitiesClient;
 import com.app.gestionInterventions.services.password.ChangePasswordService;
+import com.app.gestionInterventions.services.password.ResetPasswordService;
 import com.app.gestionInterventions.services.statistics.*;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.apache.tomcat.websocket.PojoClassHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.mail.MessagingException;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +28,8 @@ import java.util.Set;
 @RequestMapping("/api/services")
 public class ServiceController {
 
+    @Autowired
+    ResetPasswordService resetPasswordService;
     @Autowired
     ChangePasswordService changePasswordService;
     @Autowired
@@ -63,6 +69,23 @@ public class ServiceController {
     {
         return this.tnCitiesClient.getCitiesByState(state).getData();
     }
+    /*--------------------------------------Password--------------------------------------*/
+
+    @PostMapping(path = "forget-password",consumes ={MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<MessageResponse> forgetPassword(@RequestBody TextNode mail) throws ResourceNotFoundException, MessagingException {
+        return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,resetPasswordService.generateResetPasswordURL(mail.asText())));
+    }
+    @PostMapping(path = "reset-password",consumes ={MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<MessageResponse> resetPassword(@RequestHeader("Authorization")@NotNull TextNode token, @RequestBody TextNode newPassword)
+    {
+        System.out.println(token.asText());
+        if (this.resetPasswordService.doUpdate(token.asText(),newPassword.asText())) {
+            return  ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre mot de passe est modifié avec Succes"));
+        }
+        return  ResponseEntity.ok(new MessageResponse(HttpStatus.SERVICE_UNAVAILABLE,"Ce service est epiré !"));
+    }
+
+
 
 
 
@@ -73,6 +96,8 @@ public class ServiceController {
         }
         return ResponseEntity.ok(new MessageResponse(HttpStatus.BAD_REQUEST,"Il y a une erreur"));
     }
+
+    /*--------------------------------------Statistic--------------------------------------*/
 
     @GetMapping("/stats/demands")
     public List<DemandStatistic.DemandPerYear>  demandPerYears()
@@ -98,7 +123,7 @@ public class ServiceController {
     @PostMapping("/contact")
     public  ResponseEntity<MessageResponse> contact(@RequestBody MailService.Email email)  {
         try {
-            this.mailService.send(email);
+            this.mailService.sendContactUsEmail(email);
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"message envoyé avec succés"));
         }
         catch (MessagingException e) {

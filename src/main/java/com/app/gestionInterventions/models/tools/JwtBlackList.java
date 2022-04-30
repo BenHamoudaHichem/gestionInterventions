@@ -1,4 +1,4 @@
-package com.app.gestionInterventions.models.blackList;
+package com.app.gestionInterventions.models.tools;
 
 import com.app.gestionInterventions.models.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.Date;

@@ -38,7 +38,7 @@ public class AESPasswordEncoder implements PasswordEncoder
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
         return String.CASE_INSENSITIVE_ORDER.compare(rawPassword.toString(),decrypt(encodedPassword))==0;
     }
-    public static String decrypt(String encrypted) {
+    protected String decrypt(String encrypted) {
         try {
             IvParameterSpec iv = new IvParameterSpec(initVector.getBytes("UTF-8"));
             SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes("UTF-8"), "AES");

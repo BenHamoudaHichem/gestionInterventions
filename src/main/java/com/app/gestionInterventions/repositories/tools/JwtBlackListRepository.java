@@ -1,6 +1,6 @@
-package com.app.gestionInterventions.repositories.blacklist;
+package com.app.gestionInterventions.repositories.tools;
 
-import com.app.gestionInterventions.models.blackList.JwtBlackList;
+import com.app.gestionInterventions.models.tools.JwtBlackList;
 import io.jsonwebtoken.MalformedJwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;

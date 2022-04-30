@@ -3,7 +3,7 @@ package com.app.gestionInterventions.controllers;
 import com.app.gestionInterventions.payload.request.LoginRequest;
 import com.app.gestionInterventions.payload.response.JwtResponse;
 import com.app.gestionInterventions.payload.response.MessageResponse;
-import com.app.gestionInterventions.repositories.blacklist.JwtBlackListRepository;
+import com.app.gestionInterventions.repositories.tools.JwtBlackListRepository;
 import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.app.gestionInterventions.security.jwt.AuthTokenFilter;

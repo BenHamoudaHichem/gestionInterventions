@@ -1,8 +1,7 @@
 package com.app.gestionInterventions.security.jwt;
 
-import com.app.gestionInterventions.models.blackList.JwtBlackList;
-import com.app.gestionInterventions.models.user.User;
-import com.app.gestionInterventions.repositories.blacklist.JwtBlackListRepository;
+import com.app.gestionInterventions.models.tools.JwtBlackList;
+import com.app.gestionInterventions.repositories.tools.JwtBlackListRepository;
 import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.app.gestionInterventions.security.services.UserDetailsImpl;
 import com.app.gestionInterventions.security.services.UserDetailsServiceImpl;

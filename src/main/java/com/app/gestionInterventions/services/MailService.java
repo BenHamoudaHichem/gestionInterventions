@@ -14,27 +14,43 @@ import java.io.File;
 public class  MailService {
     @Autowired
     private JavaMailSender emailSender;
-   private String to = "takwaassaibi08@gmail.com";
+    private final String from = "takwaassaibi08@gmail.com";
 
 
-   public void send(Email email) throws MessagingException {
+   public void sendContactUsEmail(Email email) throws MessagingException {
 
     MimeMessage message = emailSender.createMimeMessage();
     MimeMessageHelper helper = new MimeMessageHelper(message, true);
     helper.setSubject("Email from arabIntervent");
-    helper.setFrom(to);
-    helper.setTo(to);
+    helper.setFrom(from);
+    helper.setTo(from);
     helper.setText(
         "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
         "<br><Strong>Nom de l'expediteur:</Strong><br>"+email.getFullName()+
         "<br><Strong>Numero de telephone:</Strong><br>"+email.getPhone()+
         "<br><Strong>Email:</Strong><br>"+email.getEmail()+
         "<br><Strong>Description</Strong>:<br>"+email.getDescription()+
-         "<hr><br> <Strong> Domaine:</Strong>Intervent <br><img src='cid:image001' title='Intervent' alt='Intervent'/><body></html>",true);
-    FileSystemResource resource = new FileSystemResource(String.valueOf(new File("E:\\Takwa\\660b31040b0ce94cf7557c6301cf7dd1.jpg")));
-    helper.addInline("image001", resource);
+      " <body></html>",true);
+
     emailSender.send(message);
 }
+    public void sendSimpleMail(Email email) throws MessagingException {
+
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        helper.setSubject("Email from arabIntervent");
+        helper.setFrom(from);
+        helper.setTo(email.email);
+        helper.setText(
+                "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
+                        "<br><Strong>Nom de l'expediteur:</Strong><br>"+email.getFullName()+
+                        "<br><Strong>Numero de telephone:</Strong><br>"+email.getPhone()+
+                        "<br><Strong>Email:</Strong><br>"+email.getEmail()+
+                        "<br><Strong>Description</Strong>:<br>"+email.getDescription()+
+                        " <body></html>",true);
+
+        emailSender.send(message);
+    }
 
     public static class Email {
         private String fullName;

@@ -104,7 +104,6 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
     @Override
     public Optional<User> findByIdentifier(String identifier) {
-
         Query query= new Query();
         query.addCriteria(Criteria.where("identifier").is(identifier));
         return Optional.ofNullable(this.mongoTemplate.findOne(query,User.class));
@@ -116,9 +115,9 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         query.addCriteria(Criteria.where("identifier").is(identifier));
         return this.mongoTemplate.exists(query,User.class);
     }
+
     public boolean create(List<User> userList)
     {
-
         return this.mongoTemplate.insertAll(userList).size()>0;
     }
 

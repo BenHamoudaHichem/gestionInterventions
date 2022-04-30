@@ -275,10 +275,7 @@ class GestionInterventionsApplicationTests {
 	}
 
 
-	@Test
-	public void somTests() throws ResourceNotFoundException {
-		System.out.println(this.materialStatistic.pieStatus());
-	}
+
 	@Test
 	public void testMailService() throws SMTPSendFailedException{
 	String to = "hichembenhamouda11@gmail.com";
@@ -303,6 +300,11 @@ class GestionInterventionsApplicationTests {
 		);
 		address.setLocation(geocodeService.fromCity(address));
 		return address;
+	}
+	@Test
+	public void somTests() {
+
+		System.out.println(!userRepository.existsByIdentifier("11223344"));
 	}
 }
 

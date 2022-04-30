@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class ChangePasswordService {
     @Autowired
     UserRepositoryImpl userRepository;
+
     @Autowired AESPasswordEncoder passwordEncoder;
     private boolean check(PasswordRequest passwordRequest, User user) {
         return passwordEncoder.matches(passwordRequest.oldPassword,user.getPassword());
@@ -24,6 +25,13 @@ public class ChangePasswordService {
         }
         currentUser.setPassword(passwordEncoder.encode(passwordRequest.newPassword));
         return userRepository.changePassword(currentUser)>0;
+    }
+
+    //for reset password
+    protected boolean doUpdate(User user,String newPassword)  {
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        return userRepository.changePassword(user)>0;
     }
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PasswordRequest{
