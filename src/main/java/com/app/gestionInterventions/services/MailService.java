@@ -14,7 +14,7 @@ import java.io.File;
 public class  MailService {
     @Autowired
     private JavaMailSender emailSender;
-    private final String from = "takwaassaibi08@gmail.com";
+    private final String emailIntervent = "gestintervent@gmail.com";
 
 
    public void sendContactUsEmail(Email email) throws MessagingException {
@@ -22,8 +22,7 @@ public class  MailService {
     MimeMessage message = emailSender.createMimeMessage();
     MimeMessageHelper helper = new MimeMessageHelper(message, true);
     helper.setSubject("Email from arabIntervent");
-    helper.setFrom(from);
-    helper.setTo(from);
+    helper.setTo(emailIntervent);
     helper.setText(
         "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
         "<br><Strong>Nom de l'expediteur:</Strong><br>"+email.getFullName()+
@@ -39,7 +38,6 @@ public class  MailService {
         MimeMessage message = emailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
         helper.setSubject("Email from arabIntervent");
-        helper.setFrom(from);
         helper.setTo(email.email);
         helper.setText(
                 "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
