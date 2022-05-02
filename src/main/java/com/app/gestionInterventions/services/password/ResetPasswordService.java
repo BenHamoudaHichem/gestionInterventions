@@ -14,7 +14,7 @@ import java.util.UUID;
 @Service
 public class ResetPasswordService {
 
-    private static final String URL="http://localhost:4200/forget-password";
+    private static final String URL="http://localhost:4200/reset-password";
 
     @Autowired
      MailService mailService;
@@ -34,18 +34,18 @@ public class ResetPasswordService {
             throw new ResourceNotFoundException();
         }
         String token = generateToken();
-        this.resetPasswordToken=new ResetPasswordToken(token,userRepository.findByIdentifier("11223344").get());
+        this.resetPasswordToken=new ResetPasswordToken(token,userRepository.findByIdentifier(mail).get());
         if(this.resetPasswordTokenRepository.create(this.resetPasswordToken).isPresent())
         {
-            this.mailService.resetPassword(new MailService.Email("Abd Rahmen","45210210","hichembenhamouda11@gmail.com",URL.concat("/"+this.serviceEncoder.encode(token))));
-            return URL.concat("/"+this.serviceEncoder.encode(token));
+            this.mailService.resetPassword(new MailService.Email("Abd Rahmen","45210210","hichembenhamouda11@gmail.com",URL.concat("/"+(token))));
+            return URL.concat("/"+(token));
         }
         return null;
     }
 
     public boolean doUpdate(String cryptedtoken,String newPassword)
     {
-        String token = serviceEncoder.decrypt(cryptedtoken);
+        String token = (cryptedtoken);
         System.out.println("token");
         if (this.validateToken(token)) {
             System.out.println("token validated");
@@ -57,9 +57,9 @@ public class ResetPasswordService {
 
     private String generateToken()
     {
-        return UUID.randomUUID().toString();
+        return UUID.randomUUID().toString().replace("/","");
     }
-    private boolean validateToken(String token)
+    public boolean validateToken(String token)
     {
         return this.resetPasswordTokenRepository.existsByToken(token)
                 &&this.resetPasswordTokenRepository.findByToken(token).get().getExpiryDate().compareTo(new Date())>=0;

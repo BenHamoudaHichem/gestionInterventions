@@ -10,6 +10,7 @@ import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
+import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,8 @@ public class InterventionController implements IResource<Intervention> {
     TeamRepositoryImpl teamRepository;
     @Autowired
     DemandRepositoryImpl demandRepository;
+    @Autowired
+    GeocodeService geocodeService;
 
 
     @Override
@@ -41,6 +44,7 @@ public class InterventionController implements IResource<Intervention> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
+        intervention.getAddress().setLocation(geocodeService.fromCity(intervention.getAddress()));
 
         Optional<Intervention>interventionOptional=this.interventionRepository.create(intervention);
 
@@ -57,6 +61,8 @@ public class InterventionController implements IResource<Intervention> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
+        intervention.getAddress().setLocation(geocodeService.fromCity(intervention.getAddress()));
+
         if (this.interventionRepository.update(id,intervention)>0)
         {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre intervention est modifiée avec succès"));

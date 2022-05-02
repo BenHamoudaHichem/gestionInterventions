@@ -6,6 +6,7 @@ import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 import com.app.gestionInterventions.services.FileUploadService;
+import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,8 @@ public class MaterialController implements IResource<Material> {
     MaterialRepositoryImpl materialRepository;
     @Autowired
     FileUploadService fileStorageService;
+    @Autowired
+    GeocodeService geocodeService;
 
     @Override
     @PreAuthorize("hasRole('MANAGER')")
@@ -36,6 +39,7 @@ public class MaterialController implements IResource<Material> {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
 
+        material.getAddress().setLocation(geocodeService.fromCity(material.getAddress()));
         if (this.materialRepository.create(material).isPresent()){
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre materiel est enregistré avec succes"));
         }
@@ -49,6 +53,8 @@ public class MaterialController implements IResource<Material> {
         {
             throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
+        material.getAddress().setLocation(geocodeService.fromCity(material.getAddress()));
+
         if ( materialRepository.update(id,material)>0) {
             return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED, "Votre Materiel est modifié avec succès"));
         }

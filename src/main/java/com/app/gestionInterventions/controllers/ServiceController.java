@@ -76,13 +76,23 @@ public class ServiceController {
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,resetPasswordService.generateResetPasswordURL(mail.asText())));
     }
     @PostMapping(path = "reset-password",consumes ={MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<MessageResponse> resetPassword(@RequestHeader("Authorization")@NotNull TextNode token, @RequestBody TextNode newPassword)
+    public ResponseEntity<MessageResponse> resetPassword(@RequestHeader("Authorization") TextNode token, @RequestBody TextNode newPassword)
     {
         System.out.println(token.asText());
         if (this.resetPasswordService.doUpdate(token.asText(),newPassword.asText())) {
             return  ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre mot de passe est modifié avec Succes"));
         }
         return  ResponseEntity.ok(new MessageResponse(HttpStatus.SERVICE_UNAVAILABLE,"Ce service est epiré !"));
+    }
+    @GetMapping("reset-password/check")
+    public ResponseEntity<MessageResponse> checkToken(@RequestHeader("Authorization") TextNode token)
+    {
+        System.out.println(token.asText());
+        if (resetPasswordService.validateToken(token.asText())) {
+            return  ResponseEntity.ok(new MessageResponse(HttpStatus.OK,"Votre token est valide"));
+        }
+
+        return  ResponseEntity.ok(new MessageResponse(HttpStatus.UNAUTHORIZED,"Ce service n'est pas autorisé pour vous!"));
     }
 
 
