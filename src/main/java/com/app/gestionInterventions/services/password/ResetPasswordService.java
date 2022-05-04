@@ -37,7 +37,7 @@ public class ResetPasswordService {
         this.resetPasswordToken=new ResetPasswordToken(token,userRepository.findByIdentifier("11223344").get());
         if(this.resetPasswordTokenRepository.create(this.resetPasswordToken).isPresent())
         {
-            this.mailService.sendSimpleMail(new MailService.Email("Abd Rahmen","45210210","hichembenhamouda11@gmail.com",URL.concat("/"+this.serviceEncoder.encode(token))));
+            this.mailService.resetPassword(new MailService.Email("Abd Rahmen","45210210","hichembenhamouda11@gmail.com",URL.concat("/"+this.serviceEncoder.encode(token))));
             return URL.concat("/"+this.serviceEncoder.encode(token));
         }
         return null;
