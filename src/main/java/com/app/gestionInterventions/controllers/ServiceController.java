@@ -79,6 +79,8 @@ public class ServiceController {
     public ResponseEntity<MessageResponse> resetPassword(@RequestHeader("Authorization") TextNode token, @RequestBody TextNode newPassword)
     {
         System.out.println(token.asText());
+        System.out.println(newPassword.asText());
+
         if (this.resetPasswordService.doUpdate(token.asText(),newPassword.asText())) {
             return  ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre mot de passe est modifié avec Succes"));
         }

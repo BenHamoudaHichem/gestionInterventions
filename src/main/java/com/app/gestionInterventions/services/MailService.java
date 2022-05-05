@@ -37,7 +37,7 @@ public class  MailService {
 
         MimeMessage message = emailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
-        helper.setSubject("ArabIntervent- Reset passwword");
+        helper.setSubject("ArabIntervent- Reset password");
         helper.setTo(email.email);
         helper.setText(
                 "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
