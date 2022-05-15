@@ -31,13 +31,13 @@ public class MaterialStatistic {
     {
         switch (status) {
             case Functional:
-                return "Fonctionnelle";
+                return "status.is_on";
             case Broken_down:
-                return "En_panne";
+                return "status.broken";
             case Stoled:
-                return"A_volée";
+                return"status.stolen";
             default:
-                return"Hors_service";
+                return"status.out_of_order";
         }
     }
 }

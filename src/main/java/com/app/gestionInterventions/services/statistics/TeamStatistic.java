@@ -16,8 +16,8 @@ public class TeamStatistic {
     public List<PairCustom> pieAvailable(){
         List<PairCustom> listResult= new ArrayList<>();
 
-        listResult.add(new PairCustom("Disponible",this.teamRepository.countTeamByStatus(Status.Available)));
-        listResult.add(new PairCustom("Indisponible",this.teamRepository.countTeamByStatus(Status.Unavailable)+this.teamRepository.countTeamByStatus(Status.Out_of_order)));
+        listResult.add(new PairCustom("status.is_free",this.teamRepository.countTeamByStatus(Status.Available)));
+        listResult.add(new PairCustom("status.not_free",this.teamRepository.countTeamByStatus(Status.Unavailable)+this.teamRepository.countTeamByStatus(Status.Out_of_order)));
 
         return listResult;
     }
