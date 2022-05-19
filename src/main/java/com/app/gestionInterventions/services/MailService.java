@@ -1,51 +1,76 @@
 
 package com.app.gestionInterventions.services;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring5.SpringTemplateEngine;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+
 @Component
 public class  MailService {
     @Autowired
     private JavaMailSender emailSender;
     private final String emailIntervent = "gestintervent@gmail.com";
+    @Autowired
+    private  SpringTemplateEngine templateEngine;
 
 
-   public void sendContactUsEmail(Email email) throws MessagingException {
+    public void sendContactUsEmail(Email email) throws MessagingException {
 
-    MimeMessage message = emailSender.createMimeMessage();
-    MimeMessageHelper helper = new MimeMessageHelper(message, true);
-    helper.setSubject("Email from arabIntervent");
-    helper.setTo(emailIntervent);
-    helper.setText(
-        "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
-        "<br><Strong>Nom de l'expediteur:</Strong><br>"+email.getFullName()+
-        "<br><Strong>Numero de telephone:</Strong><br>"+email.getPhone()+
-        "<br><Strong>Email:</Strong><br>"+email.getEmail()+
-        "<br><Strong>Description</Strong>:<br>"+email.getDescription()+
-      " <body></html>",true);
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message,  MimeMessageHelper.MULTIPART_MODE_MIXED, StandardCharsets.UTF_8.name());
+        Context context = new Context();
+        HashMap hashMap=new HashMap();
+        hashMap.put("name",email.getFullName());
+        hashMap.put("tel",email.getPhone());
+        hashMap.put("email",email.getEmail());
+        hashMap.put("desc",email.getDescription());
+        hashMap.put("logo","logo");
+        hashMap.put("laptop","laptop");
 
-    emailSender.send(message);
-}
+
+        context.setVariables(hashMap);
+
+        helper.setSubject("ArabIntervent- Email de contact");
+        helper.setTo(emailIntervent);
+        final String  html = templateEngine.process("sendContactUsEmail.html", context);
+        helper.setText(html,true);
+        helper.addInline("logo", new ClassPathResource("images/logo.png"), "image/png");
+        helper.addInline("laptop", new ClassPathResource("images/laptop2.jpg"), "image/jpg");
+        emailSender.send(message);
+    }
     public void resetPassword(Email email) throws MessagingException {
 
         MimeMessage message = emailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, true);
-        helper.setSubject("ArabIntervent- Reset password");
+        MimeMessageHelper helper = new MimeMessageHelper(message,  MimeMessageHelper.MULTIPART_MODE_MIXED, StandardCharsets.UTF_8.name());
+        Context context = new Context();
+        HashMap hashMap=new HashMap();
+        hashMap.put("name",email.getFullName());
+        hashMap.put("tel",email.getPhone());
+        hashMap.put("email",email.getEmail());
+        hashMap.put("link",email.getDescription());
+        hashMap.put("logo","logo");
+        hashMap.put("gif","gif");
+        hashMap.put("laptop","laptop");
+
+
+        context.setVariables(hashMap);
+
+        helper.setSubject("ArabIntervent- Réinitialiser votre mot de passe");
         helper.setTo(email.email);
-        helper.setText(
-                "<html> <head> </head><body><style type='text/css'><style> #title{color:red;}</style><br><Strong><i>Bonjour</i></Strong><br><p id='title'>Cette email est envoyé à partir de serveur</p>" + "<hr>"+
-                        "<br><Strong>Nom de l'expediteur:</Strong><br>"+email.getFullName()+
-                        "<br><Strong>Numero de telephone:</Strong><br>"+email.getPhone()+
-                        "<br><Strong>Email:</Strong><br>"+email.getEmail()+
-                        "<br><Strong>Description</Strong>:<br>"+email.getDescription()+
-                        " <body></html>",true);
+        final String  html = templateEngine.process("resetPasswordEmail.html", context);
+        helper.setText(html,true);
+        helper.addInline("logo", new ClassPathResource("images/logo.png"), "image/png");
+        helper.addInline("gif", new ClassPathResource("images/link.gif"), "image/gif");
+        helper.addInline("laptop", new ClassPathResource("images/laptop.jpg"), "image/jpg");
 
         emailSender.send(message);
     }
