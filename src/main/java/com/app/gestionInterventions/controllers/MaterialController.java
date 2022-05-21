@@ -3,11 +3,16 @@ package com.app.gestionInterventions.controllers;
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.recources.material.Material;
+import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 import com.app.gestionInterventions.services.FileUploadService;
 import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -74,9 +79,24 @@ public class MaterialController implements IResource<Material> {
 
     @Override
     public List<Material> all(Map<String, String> args) throws ResourceNotFoundException {
+        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
+        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.materialRepository.all().orElse(new ArrayList<>()).size();
+        String order= args.containsKey("direction")?args.remove("direction"):"desc";
+        String property= args.containsKey("property")?args.remove("property"):"createdAt";
+        Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
+        Pageable pageable=  PageRequest.of(page,size,sort);
+        int start = (int) pageable.getOffset();
+        int end;
         if(args.isEmpty())
         {
-            return this.materialRepository.all().orElseThrow(ResourceNotFoundException::new);
+            List<Material> res =this.materialRepository.all().orElseThrow(ResourceNotFoundException::new);
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            try {
+                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+            }catch (IllegalArgumentException ex)
+            {
+                throw new ResourceNotFoundException("Pas de pages!");
+            }
         }
         List<Material> res = new ArrayList<Material>();
         for (Map.Entry<String,String> e:
@@ -88,7 +108,13 @@ public class MaterialController implements IResource<Material> {
             throw new ResourceNotFoundException();
         }
 
-        return res;
+        try {
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+        }catch (IllegalArgumentException ex)
+        {
+            throw new ResourceNotFoundException();
+        }
     }
 
 

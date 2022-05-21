@@ -9,6 +9,8 @@ import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
+import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
@@ -72,11 +74,28 @@ public class DemandController implements IResource<Demand>  {
 
     @Override
     public List<Demand> all(Map<String, String> args) throws ResourceNotFoundException {
+        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
+        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.demandRepository.all().orElse(new ArrayList<>()).size();
+        String order= args.containsKey("direction")?args.remove("direction"):"desc";
+        String property= args.containsKey("property")?args.remove("property"):"createdAt";
+        Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
+        Pageable pageable=  PageRequest.of(page,size,sort);
+        int start = (int) pageable.getOffset();
+        int end;
         if(args.isEmpty())
         {
-            return this.demandRepository.all().orElseThrow(ResourceNotFoundException::new);
+            List<Demand> res =this.demandRepository.all().orElseThrow(ResourceNotFoundException::new);
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            try {
+                return new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent();
+            }catch (IllegalArgumentException ex)
+            {
+                throw new ResourceNotFoundException("Pas de pages!");
+            }
         }
+
         List<Demand> res = new ArrayList<Demand>();
+
         for (Map.Entry<String,String> e:
                 args.entrySet()) {
                 res.addAll(this.demandRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<Demand>()));
@@ -84,7 +103,14 @@ public class DemandController implements IResource<Demand>  {
         if (res.isEmpty()){
             throw new ResourceNotFoundException();
         }
-        return res;
+
+        try {
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            return new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent();
+        }catch (IllegalArgumentException ex)
+        {
+            throw new ResourceNotFoundException();
+        }
     }
 
     @Override
@@ -94,6 +120,19 @@ public class DemandController implements IResource<Demand>  {
     @GetMapping("/user/{id}")
     public List<Demand> findByUser(@PathVariable(value = "id")String id) throws ResourceNotFoundException {
         return this.demandRepository.allByUser(id).orElseThrow(ResourceNotFoundException::new);
+    }
+    @GetMapping("/test")
+    public List<Demand> gettest() throws ResourceNotFoundException {
+        Pageable pageable=  PageRequest.of(0,100, Sort.by(Sort.Direction.DESC,"createdAt"));
+        List<Demand>demands=demandRepository.all().orElseThrow(ResourceNotFoundException::new);
+        int start = (int) pageable.getOffset();
+        int end =(start + pageable.getPageSize()) > demandRepository.all().get().size() ? demandRepository.all().get().size(): (start + pageable.getPageSize());
+        try {
+            return new PageImpl<Demand>(demands.subList(start, end), pageable, demands.size()).getContent();
+        }catch (IllegalArgumentException ex)
+        {
+            return new ArrayList<Demand>();
+        }
     }
 
 }

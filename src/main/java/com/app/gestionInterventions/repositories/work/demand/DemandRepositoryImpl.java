@@ -7,6 +7,8 @@ import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
@@ -170,7 +172,6 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
         return result.getMappedResults();
     }
     private boolean collectionIsEmpty(){return this.mongoTemplate.collectionExists(Demand.class);}
-
 
 
 }

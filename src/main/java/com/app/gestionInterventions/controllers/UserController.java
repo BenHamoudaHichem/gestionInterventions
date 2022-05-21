@@ -7,6 +7,7 @@ import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
+import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.payload.request.RegisterUserRequest;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
@@ -16,6 +17,10 @@ import com.app.gestionInterventions.security.jwt.JwtUtils;
 import com.app.gestionInterventions.services.FileUploadService;
 import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -186,13 +191,35 @@ public class UserController {
     }
     @GetMapping("")
     public List<User>all(@RequestParam Map<String, String> args) throws ResourceNotFoundException {
+        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
+        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.userRepository.all().orElse(new ArrayList<>()).size();
+        String order= args.containsKey("direction")?args.remove("direction"):"desc";
+        String property= args.containsKey("property")?args.remove("property"):"createdAt";
+        Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
+        Pageable pageable=  PageRequest.of(page,size,sort);
+        int start = (int) pageable.getOffset();
+        int end;
         if(args.isEmpty())
         {
-            return this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
+            List<User> res =this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            try {
+                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+            }catch (IllegalArgumentException ex)
+            {
+                throw new ResourceNotFoundException("Pas de pages!");
+            }
         }
         if(args.containsKey("role")&&args.containsValue(Status.Available.name()))
         {
-            return this.teamRepository.availableMembers();
+            List<User> res = this.teamRepository.availableMembers();
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            try {
+                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+            }catch (IllegalArgumentException ex)
+            {
+                throw new ResourceNotFoundException("Pas de pages!");
+            }
         }
 
         List<User> res = new ArrayList<User>();
@@ -229,7 +256,13 @@ public class UserController {
         if (res.isEmpty()){
             throw new ResourceNotFoundException();
         }
-        return res;
+        try {
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+        }catch (IllegalArgumentException ex)
+        {
+            throw new ResourceNotFoundException();
+        }
     }
 
     @GetMapping(value = "/{id}",produces = {MediaType.APPLICATION_JSON_VALUE})
