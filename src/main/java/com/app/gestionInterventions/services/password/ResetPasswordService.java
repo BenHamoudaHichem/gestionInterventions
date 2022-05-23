@@ -2,13 +2,12 @@ package com.app.gestionInterventions.services.password;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.tools.ResetPasswordToken;
 import com.app.gestionInterventions.repositories.tools.ResetPasswordTokenRepository;
-import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
 import com.app.gestionInterventions.services.MailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
-import javax.servlet.http.HttpSessionListener;
 import java.util.Date;
 import java.util.UUID;
 @Service

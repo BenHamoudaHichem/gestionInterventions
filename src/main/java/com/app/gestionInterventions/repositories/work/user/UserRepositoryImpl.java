@@ -1,11 +1,8 @@
-package com.app.gestionInterventions.repositories.user;
+package com.app.gestionInterventions.repositories.work.user;
 
-import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
-import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
 
-import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.mongodb.DBRef;
 import org.bson.Document;
 import org.bson.types.ObjectId;

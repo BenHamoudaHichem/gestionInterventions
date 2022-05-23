@@ -2,6 +2,7 @@ package com.app.gestionInterventions.models.work.intervention;
 
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.recources.material.Material;
+import com.app.gestionInterventions.models.recources.material.MaterialUsed;
 import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
@@ -38,17 +39,16 @@ public class Intervention {
     protected Address address;
     @JsonFormat(pattern = "dd-MM-yyyy")
     protected Date startedAt;
-
+    @JsonFormat(pattern = "dd-MM-yyyy")
+    protected Date expiredAt;
     @DBRef
     protected List<Demand> demandList;
-    @DBRef
-    protected List<Material> materialList;
+    protected List<MaterialUsed> materialsToBeUsed;
     @DBRef
     protected Team team;
     @NotBlank
     protected Status status;
     protected final LocalDateTime createdAt;
-
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Intervention(@JsonProperty(value = "id",required = false) String id,
@@ -57,8 +57,9 @@ public class Intervention {
                         @JsonProperty(value = "category",required = true)Category category,
                         @JsonProperty(value = "address",required = true)Address address,
                         @JsonProperty(value = "startedAt",required = true)Date startedAt,
+                        @JsonProperty(value = "expiredAt",required = true)Date expiredAt,
                         @JsonProperty(value = "demandList",required = true)List<Demand> demandList,
-                        @JsonProperty(value = "materialList",required = true)List<Material>  materialList,
+                        @JsonProperty(value = "materialList",required = true)List<MaterialUsed>  materialsToBeUsed,
                         @JsonProperty(value = "team",required = true)Team team,
                         @JsonProperty(value = "status",required = true)Status status,
                         @JsonProperty(value = "createdAt",required = false)LocalDateTime createdAt) {
@@ -68,9 +69,10 @@ public class Intervention {
         this.category = category;
         this.address = address;
         this.startedAt = startedAt;
+        this.expiredAt = expiredAt;
         this.status = status;
         this.demandList = demandList;
-        this.materialList=materialList;
+        this.materialsToBeUsed=materialsToBeUsed;
         this.team = team;
         this.createdAt = createdAt== null ? LocalDateTime.now():createdAt;
     }
@@ -108,7 +110,13 @@ public class Intervention {
         return startedAt;
     }
 
+    public Date getExpiredAt() {
+        return expiredAt;
+    }
 
+    public void setExpiredAt(Date expiredAt) {
+        this.expiredAt = expiredAt;
+    }
 
     public Address getAddress() {
         return address;
@@ -118,12 +126,12 @@ public class Intervention {
         this.address = address;
     }
 
-    public List<Material> getMaterialList() {
-        return materialList;
+    public List<MaterialUsed> getMaterialsToBeUsed() {
+        return materialsToBeUsed;
     }
 
-    public void setMaterialList(List<Material> materialList) {
-        this.materialList = materialList;
+    public void setMaterialsToBeUsed(List<MaterialUsed> materialsToBeUsed) {
+        this.materialsToBeUsed = materialsToBeUsed;
     }
 
     public void setStartedAt(Date startedAt) {

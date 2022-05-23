@@ -21,7 +21,7 @@ import org.springframework.util.SocketUtils;
 
 public class MongoConfig {
 
-    private static final String CONNECTION_STRING = "mongodb://127.0.0.1:27017";
+    private static final String CONNECTION_STRING = "mongodb://manager:xyz123@127.0.0.1:27017/gestioninterventions_db?authSource=gestioninterventions_db";
     private static final String HOST = "localhost";
 
     @Bean
@@ -37,6 +37,6 @@ public class MongoConfig {
         MongodStarter starter = MongodStarter.getDefaultInstance();
         MongodExecutable mongodExecutable = starter.prepare(mongoDbConfig);
         mongodExecutable.start();
-        return new MongoTemplate(MongoClients.create(String.format(CONNECTION_STRING, HOST, randomPort)), "gestinterv_db");
+        return new MongoTemplate(MongoClients.create(String.format(CONNECTION_STRING, HOST, randomPort)), "gestioninterventions_db");
     }
 }

@@ -107,11 +107,7 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
     public List<Category> create(List<Category> categoryList) {
         return categoryList.stream().map(category -> {checkIndex();
 
-            try {
-                wait(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
             return this.create(category).orElse(null);
         }).collect(Collectors.toList());
     }

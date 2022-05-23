@@ -9,7 +9,7 @@ import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 
-import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
 import com.mongodb.DBRef;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -27,6 +27,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
@@ -44,7 +45,7 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
     @Override
     public Optional<Team> create(Team team) {
         Query query=new Query();
-        query.addCriteria(Criteria.where("name").regex("ROLE_TEAMMANAGER"));
+        query.addCriteria(Criteria.where("name").is(ERole.ROLE_TEAMMANAGER.name()));
         Role role=this.mongoTemplate.findOne(query,Role.class);
 
         this.checkIndex();
@@ -57,13 +58,10 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
         return Optional.ofNullable(this.mongoTemplate.insert(team));
     }
 
-    @Override
     public long update(String id, Team team) {
 
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-
-
         Update update =new Update();
         if (team.getMembers().contains(team.getManager())){
             team.getMembers().remove(team.getManager());
@@ -164,9 +162,8 @@ public class TeamRepositoryImpl implements TeamRepositoryCustom{
         {
             return mongoTemplate.find(query1,User.class);
         }
-       return this.mongoTemplate.find(query1,User.class).stream().filter(p->!(this.mongoTemplate.findAll(Team.class)
-                        .parallelStream().collect(ArrayList<User>::new,(x,y)->{x.addAll(y.getMembers());x.add(y.getManager());}
-                        ,ArrayList::addAll).contains(p))
+       return this.mongoTemplate.find(query1,User.class).stream().filter(p->!new ArrayList<User>(Stream.concat(this.mongoTemplate.findAll(Team.class).stream().map(x->x.getMembers()).flatMap(List::stream),this.mongoTemplate.findAll(Team.class).stream().map(x->x.getManager()))
+               .collect(Collectors.toList())).contains(p)
         ).collect(Collectors.toList());
 
     }

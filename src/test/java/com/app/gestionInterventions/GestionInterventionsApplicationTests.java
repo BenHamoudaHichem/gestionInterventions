@@ -1,8 +1,9 @@
 package com.app.gestionInterventions;
 
-import com.app.gestionInterventions.configuration.MailConfiguration;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
+import com.app.gestionInterventions.models.additional.EMeasure;
+import com.app.gestionInterventions.models.additional.QuantityValue;
 import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.models.recources.material.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
@@ -15,8 +16,8 @@ import com.app.gestionInterventions.models.work.intervention.category.Category;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
-import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
-import com.app.gestionInterventions.repositories.user.role.RoleRepository;
+import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.work.user.role.RoleRepository;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
@@ -40,10 +41,11 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import javax.mail.MessagingException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+
 @SpringBootTest
 //@DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
 @ExtendWith(SpringExtension.class)
@@ -94,30 +96,43 @@ class GestionInterventionsApplicationTests {
 	@Test
 	public void createRole()
 	{
-		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_CUSTOMER)));
+		/*Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_CUSTOMER)));
 		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_MANAGER)));
 		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_MEMBER)));
-		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_TEAMMANAGER)));
+		Assertions.assertNotNull(this.roleRepository.save(new Role(ERole.ROLE_TEAMMANAGER)));*/
+		System.out.println(this.roleRepository.findAll());
 	}
 	@Test
 	void createMaterial()
 	{
+		Random random=new Random();
 		Faker faker ;
 		Material material;
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("en-GB"), new RandomService());
-		for (int i = 0; i <12 ; i++) {
+		List<String>materialNameList=new ArrayList<>(getDistinctMaterial());
+		for (int i = 0; i <10 ; i++) {
 			faker = new Faker();
 			material=new Material(
 					null,
-					faker.commerce().material(),
+					materialNameList.remove(random.nextInt(materialNameList.size())),
 					fakeValuesService.regexify("[A-Za-z]{165}"),
+					 new QuantityValue(getRandomFloat(), EMeasure.Meter),
+
 					faker.date().birthday(7,10),
 					getAddress(faker),
-					Status.Broken_down
+					Status.Functional
 
 			);
+
 			Assertions.assertNotNull(this.materialRepository.create(material));
+			System.out.println("Materiel 1"+material.getName()+"created.");
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
 
 		}
 
@@ -138,20 +153,23 @@ class GestionInterventionsApplicationTests {
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("fr", "FRANCE", "WIN"), new RandomService());
 		User user;
-		for (int i = 0; i <1 ; i++) {
+		for (int i = 0; i <25 ; i++) {
 			user=new User(
 					null,
 					faker.name().firstName(),
 					faker.name().lastName(),
-					"33445566",
-					//fakeValuesService.regexify("[1-9]{8}"),
-					passwordEncoder.encode("12345678"),
+					fakeValuesService.regexify("[1-9]{2,10}")+"@gmail.com",
+					passwordEncoder.encode(fakeValuesService.regexify("[1-9]{10}")),
 					getAddress(faker),
 					fakeValuesService.regexify("[0-9]{8}")
 			);
-			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_MEMBER).get())));
+			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_CUSTOMER).get())));
 			Assertions.assertNotNull(this.userRepository.create(user));
-
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	@Test
@@ -161,7 +179,7 @@ class GestionInterventionsApplicationTests {
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("fr", "FRANCE", "WIN"), new RandomService());
 		User user;
-		for (int i = 0; i <20 ; i++) {
+		for (int i = 0; i <1 ; i++) {
 			user=new User(
 					null,
 					faker.name().firstName(),
@@ -193,8 +211,13 @@ class GestionInterventionsApplicationTests {
 					getAddress(faker),
 					fakeValuesService.regexify("[0-9]{8}")
 			);
-			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_TEAMMANAGER).get())));
+			user.setRoles(new HashSet<Role>(Arrays.asList(roleRepository.findByName(ERole.ROLE_MEMBER).get())));
 			Assertions.assertNotNull(this.userRepository.create(user));
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
 		}
 	}
@@ -205,16 +228,21 @@ class GestionInterventionsApplicationTests {
 	{
 		Random ran = new Random();
 
-		for (int i = 8; i <12 ; i++) {
+		for (int i = 1; i <14 ; i++) {
 			List<User>availableMembers=teamRepository.availableMembers();
 			System.out.println(availableMembers.size());
 			Team team=this.teamRepository.create(new Team(null,
 					"equipe "+i,
 					availableMembers.get(0),
-					availableMembers.subList(1,ran.nextInt(2)+2),
+					availableMembers.subList(1,ran.nextInt(3)+3),
 					com.app.gestionInterventions.models.recources.team.Status.Available
 			)).orElse(null);
 			Assertions.assertNotNull(team);
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
@@ -229,7 +257,7 @@ class GestionInterventionsApplicationTests {
 		Random ran = new Random();
 
 		List<User>users=userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_CUSTOMER).get()).get();
-		for (int i = 0; i < 30; i++) {
+		for (int i = 0; i < 20; i++) {
 			faker = new Faker();
 			demand = new Demand(
 					null,
@@ -244,8 +272,6 @@ class GestionInterventionsApplicationTests {
 		}
 	}
 
-
-
 	@Test
 	public void createIntervention() throws ResourceNotFoundException {
 		List<Demand>demandList;
@@ -253,24 +279,31 @@ class GestionInterventionsApplicationTests {
 				new Locale("en-GB"), new RandomService());
 		Random ran = new Random();
 		Faker faker;
-		for (int i = 1; i < 9; i++) {
+		for (int i = 1; i < 4; i++) {
 			faker=new Faker();
 			demandList=demandRepository.findDemandsByStatus(com.app.gestionInterventions.models.work.demand.Status.In_Progress).subList(1,ran.nextInt(1)+4);
 
+			Date startedAt=Date.from(LocalDate.of(2022,ran.nextInt(11)+1,ran.nextInt(29)+1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+			Date expiredAt=Date.from(LocalDate.of(2023,ran.nextInt(11)+1,ran.nextInt(29)+1).atStartOfDay(ZoneId.systemDefault()).toInstant());
 			Assertions.assertNotNull(interventionRepository.create(new Intervention(
 					null,
 					fakeValuesService.regexify("[A-Za-z]{17}")+i,
 					fakeValuesService.regexify("[A-Za-z ]{250}"),
 					categoryRepository.all().get().get(ran.nextInt(2)),
 					demandList.get(0).getAddress(),
-					Date.from(LocalDate.of(2022,ran.nextInt(11)+1,ran.nextInt(29)+1).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+					startedAt,
+					expiredAt,
 					demandList,
-					materialRepository.availableMaterials().subList(1,ran.nextInt(2)+3),
-					teamRepository.teamAvailable().get().get(0),
+null,					teamRepository.teamAvailable().get().get(0),
 					com.app.gestionInterventions.models.work.intervention.Status.In_Progress,
 					null
 			)));
-
+			System.out.println("inserted "+i);
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -304,7 +337,22 @@ class GestionInterventionsApplicationTests {
 	@Test
 	public void somTests() {
 
-		System.out.println(!userRepository.existsByIdentifier("11223344"));
+		System.out.println(getRandomFloat());
+		//list.forEach(i-> System.out.println(i.getId()));
+
+	}
+	public List<String> getDistinctMaterial()
+	{
+		return Arrays.asList("calcium", "phosphorus", "sodium", "potassium", "magnesium", "manganese", "sulfur", "chloride", "iron", "iodine", "fluoride", "zinc", "copper", "selenium", "chromium" , "cobalt");
+
+	}
+	public Float getRandomFloat()
+	{
+		float leftLimit = 500F;
+		float rightLimit = 2001F;
+		float res= leftLimit + new Random().nextFloat() * (rightLimit - leftLimit);
+
+		return (float)Math.round(res*100.0f)/100.0f;
 	}
 }
 

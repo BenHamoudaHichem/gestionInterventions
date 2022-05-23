@@ -6,6 +6,7 @@ import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.mongodb.DBRef;
@@ -34,12 +35,14 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     private final MongoTemplate mongoTemplate;
     private TeamRepositoryImpl teamRepository;
     private DemandRepositoryImpl demandRepository;
+    private MaterialRepositoryImpl materialRepository;
 
     @Autowired
     public InterventionRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
         teamRepository=new TeamRepositoryImpl(mongoTemplate);
         demandRepository=new DemandRepositoryImpl(mongoTemplate);
+        materialRepository= new MaterialRepositoryImpl(mongoTemplate);
     }
 
 
@@ -58,6 +61,10 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
             e.setStatus(com.app.gestionInterventions.models.work.demand.Status.Accepted);
             this.demandRepository.update(e.getId(),e);
         });
+        intervention.getMaterialsToBeUsed().forEach(i->{
+            Material material= materialRepository.findById(i.getId()).get();
+            material.getTotalQuantity().setQuantityToUse(material.getTotalQuantity().getQuantityToUse()-i.getQuantityToUse().getQuantityToUse());
+        });
         return Optional.of(this.mongoTemplate.save(intervention));
     }
 
@@ -74,9 +81,10 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
         update.set("title",intervention.getTitle());
         update.set("description",intervention.getDescription());
         update.set("startedAt",intervention.getStartedAt());
+        update.set("expiredAt",intervention.getExpiredAt());
         update.set("category",new DBRef("categories",new ObjectId(intervention.getCategory().getId())));
         update.set("team",new DBRef("teams",new ObjectId(intervention.getTeam().getId())));
-        update.set("materialList",intervention.getMaterialList().stream().map(x->new DBRef("materials",new ObjectId(x.getId()))).collect(Collectors.toList()));
+        update.set("materialsToBeUsed",intervention.getMaterialsToBeUsed());//.stream().map(x->new DBRef("materials",new ObjectId(x.getId()))).collect(Collectors.toList()));
         update.set("demandList",intervention.getDemandList().stream().map(x->new DBRef("demands",new ObjectId(x.getId()))).collect(Collectors.toList()));
 
         update.set("status",intervention.getStatus());
@@ -148,8 +156,7 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     }
     public List<Material> allmaterialUsed()
     {
-        return mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialList().stream()).collect(Collectors.toList());
-
+        return mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialsToBeUsed().stream()).collect(Collectors.toList());
     }
     public int create(List<Intervention> interventionList)
     {
@@ -160,7 +167,6 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     {
         this.mongoTemplate.dropCollection(Intervention.class);
     }
-
     private void checkIndex()
     {
         this.mongoTemplate.indexOps(Intervention.class).ensureIndex(

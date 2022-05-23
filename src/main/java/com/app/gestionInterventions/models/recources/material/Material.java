@@ -1,6 +1,7 @@
 package com.app.gestionInterventions.models.recources.material;
 
 import com.app.gestionInterventions.models.additional.Address;
+import com.app.gestionInterventions.models.additional.QuantityValue;
 import com.fasterxml.jackson.annotation.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -16,30 +17,34 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true,value ={"target","source",} )
 public class Material {
     @Id
-    private String id;
+    protected String id;
     @NotBlank
     @Size(min = 3,max = 30)
-    private String name;
+    protected String name;
     @NotBlank
     @Size(min = 3,max = 254)
-    private String description;
+    protected String description;
+    @NotNull
+    protected QuantityValue totalQuantity;
     @JsonFormat(pattern = "dd-MM-yyyy")
     @Past
-    private Date dateOfPurchase;
+    protected Date dateOfPurchase;
     @NotNull
-    private Address address;
+    protected Address address;
     @NotBlank
     private Status status;
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Material(@JsonProperty(value = "id",required = false) String id,
                     @JsonProperty(value = "name",required = false)String name,
                     @JsonProperty(value = "description",required = false)String description,
+                    @JsonProperty(value = "totalQuantity",required = false)QuantityValue totalQuantity,
                     @JsonProperty(value = "dateOfPurchase",required = false)Date dateOfPurchase,
                     @JsonProperty(value = "address",required = false)Address address,
                     @JsonProperty(value = "status",required = false)Status status) {
         this.id = id;
         this.name = name;
         this.description = description;
+        this.totalQuantity=totalQuantity;
         this.dateOfPurchase = dateOfPurchase;
         this.address = address;
         this.status = status;
@@ -91,6 +96,18 @@ public class Material {
 
     public void setDateOfPurchase(Date dateOfPurchase) {
         this.dateOfPurchase = dateOfPurchase;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public QuantityValue getTotalQuantity() {
+        return totalQuantity;
+    }
+
+    public void setTotalQuantity(QuantityValue totalQuantity) {
+        this.totalQuantity = totalQuantity;
     }
 
     @Override
