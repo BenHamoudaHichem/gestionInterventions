@@ -1,7 +1,7 @@
 package com.app.gestionInterventions.security.services;
 
 import com.app.gestionInterventions.models.user.User;
-import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

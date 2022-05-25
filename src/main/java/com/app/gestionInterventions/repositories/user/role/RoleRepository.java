@@ -1,4 +1,4 @@
-package com.app.gestionInterventions.repositories.work.user.role;
+package com.app.gestionInterventions.repositories.user.role;
 
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;

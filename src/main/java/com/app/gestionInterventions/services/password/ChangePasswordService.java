@@ -2,7 +2,7 @@ package com.app.gestionInterventions.services.password;
 
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.user.User;
-import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.beans.factory.annotation.Autowired;

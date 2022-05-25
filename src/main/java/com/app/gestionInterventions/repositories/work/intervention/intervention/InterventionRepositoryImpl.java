@@ -1,13 +1,16 @@
 package com.app.gestionInterventions.repositories.work.intervention.intervention;
 
 import com.app.gestionInterventions.models.recources.material.Material;
+import com.app.gestionInterventions.models.recources.material.MaterialUsed;
 import com.app.gestionInterventions.models.recources.team.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
+import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
+import com.app.gestionInterventions.repositories.tools.StashedRepository;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.mongodb.DBRef;
 import org.bson.Document;
@@ -36,6 +39,8 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     private TeamRepositoryImpl teamRepository;
     private DemandRepositoryImpl demandRepository;
     private MaterialRepositoryImpl materialRepository;
+    private StashedRepository stashedRepository;
+
 
     @Autowired
     public InterventionRepositoryImpl(MongoTemplate mongoTemplate) {
@@ -43,6 +48,8 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
         teamRepository=new TeamRepositoryImpl(mongoTemplate);
         demandRepository=new DemandRepositoryImpl(mongoTemplate);
         materialRepository= new MaterialRepositoryImpl(mongoTemplate);
+        this.stashedRepository=new StashedRepository(mongoTemplate);
+
     }
 
 
@@ -95,6 +102,8 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
+        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, Intervention.class)));
+
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, Intervention.class))).getDeletedCount();
     }
 
@@ -154,7 +163,7 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
 
         return this.search(key,value,true,"name") ;
     }
-    public List<Material> allmaterialUsed()
+    public List<MaterialUsed> allmaterialUsed()
     {
         return mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialsToBeUsed().stream()).collect(Collectors.toList());
     }

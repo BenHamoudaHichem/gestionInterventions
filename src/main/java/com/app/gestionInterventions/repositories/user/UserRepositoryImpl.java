@@ -1,8 +1,11 @@
-package com.app.gestionInterventions.repositories.work.user;
+package com.app.gestionInterventions.repositories.user;
 
+import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.Role;
 
+import com.app.gestionInterventions.models.work.intervention.Intervention;
+import com.app.gestionInterventions.repositories.tools.StashedRepository;
 import com.mongodb.DBRef;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -22,6 +25,7 @@ import org.springframework.stereotype.Repository;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,12 +35,11 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 @Repository
 public class UserRepositoryImpl implements UserRepositoryCustom{
     private final MongoTemplate mongoTemplate;
-
-
-
+    private StashedRepository stashedRepository;
     @Autowired
     public UserRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+        this.stashedRepository=new StashedRepository(mongoTemplate);
     }
 
     @Override
@@ -73,7 +76,12 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
 
     @Override
     public long detele(String id) {
-        return 0;
+        Query query= new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, User.class)));
+
+        return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, User.class))).getDeletedCount();
+
     }
 
 

@@ -2,7 +2,7 @@ package com.app.gestionInterventions.security.jwt;
 
 import com.app.gestionInterventions.models.tools.JwtBlackList;
 import com.app.gestionInterventions.repositories.tools.JwtBlackListRepository;
-import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.app.gestionInterventions.security.services.UserDetailsImpl;
 import com.app.gestionInterventions.security.services.UserDetailsServiceImpl;
 import io.jsonwebtoken.*;

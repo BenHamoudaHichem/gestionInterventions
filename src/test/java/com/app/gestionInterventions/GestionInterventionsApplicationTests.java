@@ -16,8 +16,8 @@ import com.app.gestionInterventions.models.work.intervention.category.Category;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
-import com.app.gestionInterventions.repositories.work.user.UserRepositoryImpl;
-import com.app.gestionInterventions.repositories.work.user.role.RoleRepository;
+import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
+import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
@@ -337,8 +337,8 @@ null,					teamRepository.teamAvailable().get().get(0),
 	@Test
 	public void somTests() {
 
-		System.out.println(getRandomFloat());
-		//list.forEach(i-> System.out.println(i.getId()));
+		Object p= roleRepository.findByName(ERole.ROLE_MEMBER);
+		System.out.println(((Role) p).getId());
 
 	}
 	public List<String> getDistinctMaterial()
@@ -353,6 +353,13 @@ null,					teamRepository.teamAvailable().get().get(0),
 		float res= leftLimit + new Random().nextFloat() * (rightLimit - leftLimit);
 
 		return (float)Math.round(res*100.0f)/100.0f;
+	}
+	public List<String>getSomeCategoriesNames()
+	{
+		return Arrays.asList(
+				"Contractualisation public","Sanitaires, fluides et climatisation",
+				"Travaux de terrassement et de remblayage","pavage des routes"
+		);
 	}
 }
 

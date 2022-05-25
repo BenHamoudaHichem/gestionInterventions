@@ -4,7 +4,9 @@ import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.recources.material.Material;
 
 import com.app.gestionInterventions.models.recources.material.Status;
+import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
+import com.app.gestionInterventions.repositories.tools.StashedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -27,10 +29,12 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
 
     private final MongoTemplate mongoTemplate;
+    private StashedRepository stashedRepository;
 
     @Autowired
     public MaterialRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+        this.stashedRepository=new StashedRepository(mongoTemplate);
     }
 
 
@@ -60,7 +64,7 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-
+        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, Material.class)));
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, Material.class))).getDeletedCount();
     }
 
@@ -148,7 +152,7 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     }
     public List<Material>availableMaterials() throws ResourceNotFoundException {
         return this.all().orElseThrow(ResourceNotFoundException::new).stream().filter(x->!(
-                 mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialList().stream()).collect(Collectors.toList())
+                 mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialsToBeUsed().stream()).collect(Collectors.toList())
                  .contains(x))&&x.getStatus().equals(Status.Functional)).collect(Collectors.toList());
     }
 }

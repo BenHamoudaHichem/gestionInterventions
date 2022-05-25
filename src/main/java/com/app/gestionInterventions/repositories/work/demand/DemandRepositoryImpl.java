@@ -1,8 +1,11 @@
 package com.app.gestionInterventions.repositories.work.demand;
 
+import com.app.gestionInterventions.models.tools.Stashed;
+import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.demand.Status;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.repositories.tools.StashedRepository;
 import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -28,10 +31,14 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 public class DemandRepositoryImpl implements DemandRepositoryCustom{
 
     private final MongoTemplate mongoTemplate;
+    private StashedRepository stashedRepository;
+
 
     @Autowired
     public DemandRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+        this.stashedRepository=new StashedRepository(mongoTemplate);
+
     }
 
     @Override
@@ -58,6 +65,8 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
+        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, User.class)));
+
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, Demand.class))).getDeletedCount();
     }
 

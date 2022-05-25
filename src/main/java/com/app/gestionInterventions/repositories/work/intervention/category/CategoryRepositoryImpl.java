@@ -2,6 +2,8 @@ package com.app.gestionInterventions.repositories.work.intervention.category;
 
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.repositories.tools.StashedRepository;
+import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +28,16 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 @Repository
 public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
     private final MongoTemplate mongoTemplate;
+    private StashedRepository stashedRepository;
 
+    private InterventionRepositoryImpl interventionRepository;
 
     @Autowired
     public CategoryRepositoryImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
+        this.stashedRepository=new StashedRepository(mongoTemplate);
+        this.interventionRepository=new InterventionRepositoryImpl(mongoTemplate);
+
     }
 
     @Override
