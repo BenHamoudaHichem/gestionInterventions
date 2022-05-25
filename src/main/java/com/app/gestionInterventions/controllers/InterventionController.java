@@ -11,13 +11,16 @@ import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryIm
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
 import com.app.gestionInterventions.services.GeocodeService;
+import com.sun.net.httpserver.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +46,7 @@ public class InterventionController implements IResource<Intervention> {
 
 
     @Override
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> create(Intervention intervention, BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
@@ -60,6 +64,7 @@ public class InterventionController implements IResource<Intervention> {
     }
 
     @Override
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> update(String id, Intervention intervention,BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
@@ -75,6 +80,7 @@ public class InterventionController implements IResource<Intervention> {
     }
 
     @Override
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> delete(String id) {
         if (this.interventionRepository.detele(id)>0)
         {
@@ -84,45 +90,74 @@ public class InterventionController implements IResource<Intervention> {
     }
 
     @Override
-    public List<Intervention> all(Map<String, String> args) throws ResourceNotFoundException {
-        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
-        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.interventionRepository.all().orElse(new ArrayList<>()).size();
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<Intervention>> all(Map<String, String> args)  {
+        int page;
+        int size;
+        try {
+            page=args.containsKey("page")?Integer.parseInt(args.remove("page")):0;
+        }catch (NumberFormatException numberFormatException)
+        {
+            page=0;
+        }
+        try {
+            size=args.containsKey("size")?Integer.parseInt(args.remove("size")):10;
+
+        }catch (NumberFormatException numberFormatException)
+        {
+            size=10;
+        }
         String order= args.containsKey("direction")?args.remove("direction"):"desc";
         String property= args.containsKey("property")?args.remove("property"):"createdAt";
         Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
-        Pageable pageable=  PageRequest.of(page,size,sort);
+        Pageable pageable=  PageRequest.of(page,size);
         int start = (int) pageable.getOffset();
         int end;
+        HttpHeaders headers= new HttpHeaders();
+        headers.add("Access-Control-Expose-Headers", "page,size,totalPages,totalResults");
+        headers.add("page",String.valueOf(pageable.getPageNumber()));
+        headers.add("size",String.valueOf(pageable.getPageSize()));
         if(args.isEmpty())
         {
-            List<Intervention> res =this.interventionRepository.all().orElseThrow(ResourceNotFoundException::new);
+            List<Intervention> res =this.interventionRepository.all().orElse(new ArrayList<>());
             end = Math.min((start + pageable.getPageSize()), res.size());
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
+
             try {
-                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+                return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
             }catch (IllegalArgumentException ex)
             {
-                throw new ResourceNotFoundException("Pas de pages!");
+                return ResponseEntity.ok().headers(headers).body(res);
+            }catch (IndexOutOfBoundsException ex)
+            {
+                return ResponseEntity.ok().headers(headers).body(res);
             }
         }
         List<Intervention> res = new ArrayList<Intervention>();
         for (Map.Entry<String,String> e:
                 args.entrySet()) {
-            res.addAll(this.interventionRepository.search(e.getKey(),e.getValue()).orElse(null));
+            res.addAll(this.interventionRepository.search(e.getKey(),e.getValue(),sort).orElse(new ArrayList<>()));
         }
-        if (res.isEmpty()){
-            throw new ResourceNotFoundException();
-        }
+
         try {
             end = Math.min((start + pageable.getPageSize()), res.size());
-            return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
+
+            return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
         }catch (IllegalArgumentException ex)
         {
-            throw new ResourceNotFoundException();
+            return ResponseEntity.ok().headers(headers).body(res);
+        }catch (IndexOutOfBoundsException ex)
+        {
+            return ResponseEntity.ok().headers(headers).body(res);
         }
     }
 
     @Override
-    public Intervention findById(String id) throws ResourceNotFoundException {
-        return this.interventionRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Intervention> findById(String id) throws ResourceNotFoundException {
+        return ResponseEntity.ok().body(this.interventionRepository.findById(id).orElseThrow(ResourceNotFoundException::new));
     }
 }

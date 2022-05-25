@@ -1,6 +1,7 @@
 package com.app.gestionInterventions.repositories.resources.material;
 
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
 
 import com.app.gestionInterventions.models.recources.material.Status;
@@ -55,8 +56,10 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
         update.set("description",material.getDescription());
         update.set("address",material.getAddress());
         update.set("dateOfPurchase",material.getDateOfPurchase());
+        update.set("totalQuantity",material.getTotalQuantity());
 
         update.set("status",material.getStatus());
+
         return this.mongoTemplate.updateFirst(query,update,Material.class).getModifiedCount();
     }
 
@@ -70,6 +73,11 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
 
     @Override
     public Optional<List<Material>> all() {
+        Query query= new Query();
+        query.with(Sort.by(Sort.Direction.ASC, "dateOfPurchase"));
+        return Optional.ofNullable(this.mongoTemplate.find(query,Material.class));
+    }
+    public Optional<List<Material>> findByStatus() {
         Query query= new Query();
         query.with(Sort.by(Sort.Direction.ASC, "dateOfPurchase"));
         return Optional.ofNullable(this.mongoTemplate.find(query,Material.class));
@@ -106,21 +114,16 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     }
 
     @Override
-    public Optional<List<Material>> search(String key, String value, boolean crescent, String factory) {
+    public Optional<List<Material>> search(String key, String value, Sort sort) {
         if(key.equals("status")&&value.equals("Available"))
         {
             try {
                 return Optional.of(this.availableMaterials());
             } catch (ResourceNotFoundException e) {
-                return Optional.ofNullable(null);
+                return Optional.of(new ArrayList<>());
             }
         }
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = Aggregation.sort(Sort.by(direction, factory));
+        SortOperation sortOperation = Aggregation.sort(sort);
 
         MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
         Aggregation aggregation = newAggregation(sortOperation,matchOperation);
@@ -131,7 +134,7 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     @Override
     public Optional<List<Material>> search(String key, String value) {
 
-        return this.search(key,value,true,"dateOfPurchase") ;
+        return this.search(key,value,Sort.by(Sort.Direction.DESC,"dateOfPurchase")) ;
     }
     public int create(List<Material> materialList)
     {
@@ -151,8 +154,13 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
         return this.mongoTemplate.count(query, Material.class);
     }
     public List<Material>availableMaterials() throws ResourceNotFoundException {
-        return this.all().orElseThrow(ResourceNotFoundException::new).stream().filter(x->!(
-                 mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialsToBeUsed().stream()).collect(Collectors.toList())
-                 .contains(x))&&x.getStatus().equals(Status.Functional)).collect(Collectors.toList());
+        if (!mongoTemplate.collectionExists(Intervention.class)) {
+            return this.all().get();
+        }
+        System.out.println(mongoTemplate.findAll(Intervention.class).stream().filter(a->a.getStatus().equals(com.app.gestionInterventions.models.work.intervention.Status.In_Progress)).flatMap(a->a.getMaterialsToBeUsed().stream().filter(b->b.getCategory().equals(ECategory.Material))).collect(Collectors.toList()).size());
+        return this.mongoTemplate.findAll(Material.class).stream().filter(x->!(
+              mongoTemplate.findAll(Intervention.class).stream().filter(a->a.getStatus().equals(com.app.gestionInterventions.models.work.intervention.Status.In_Progress)).flatMap(a->a.getMaterialsToBeUsed().stream().filter(b->b.getCategory().equals(ECategory.Material))).collect(Collectors.toList())
+            .contains(x))&&!(x.getStatus().equals(Status.Broken_down)||x.getStatus().equals(Status.Expired)||x.getStatus().equals(Status.Stoled))).collect(Collectors.toList());
+
     }
 }

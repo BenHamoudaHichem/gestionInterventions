@@ -59,7 +59,7 @@ public class Intervention {
                         @JsonProperty(value = "startedAt",required = true)Date startedAt,
                         @JsonProperty(value = "expiredAt",required = true)Date expiredAt,
                         @JsonProperty(value = "demandList",required = true)List<Demand> demandList,
-                        @JsonProperty(value = "materialList",required = true)List<MaterialUsed>  materialsToBeUsed,
+                        @JsonProperty(value = "materialsToBeUsed",required = true)List<MaterialUsed>  materialsToBeUsed,
                         @JsonProperty(value = "team",required = true)Team team,
                         @JsonProperty(value = "status",required = true)Status status,
                         @JsonProperty(value = "createdAt",required = false)LocalDateTime createdAt) {

@@ -8,16 +8,20 @@ import com.app.gestionInterventions.models.work.demand.Status;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.services.GeocodeService;
+import com.sun.net.httpserver.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
 import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.*;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -37,6 +41,7 @@ public class DemandController implements IResource<Demand>  {
     GeocodeService geocodeService;
 
     @Override
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CUSTOMER')")
     public ResponseEntity<MessageResponse> create(Demand demand, BindingResult bindingResult) throws EntityValidatorException {
         if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
         {
@@ -73,24 +78,48 @@ public class DemandController implements IResource<Demand>  {
     }
 
     @Override
-    public List<Demand> all(Map<String, String> args) throws ResourceNotFoundException {
-        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
-        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.demandRepository.all().orElse(new ArrayList<>()).size();
+    public ResponseEntity<List<Demand>> all(Map<String, String> args)  {
+        int page;
+        int size;
+        try {
+            page=args.containsKey("page")?Integer.parseInt(args.remove("page")):0;
+        }catch (NumberFormatException numberFormatException)
+        {
+            page=0;
+        }
+        try {
+            size=args.containsKey("size")?Integer.parseInt(args.remove("size")):10;
+
+        }catch (NumberFormatException numberFormatException)
+        {
+            size=10;
+        }
         String order= args.containsKey("direction")?args.remove("direction"):"desc";
         String property= args.containsKey("property")?args.remove("property"):"createdAt";
         Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
-        Pageable pageable=  PageRequest.of(page,size,sort);
+        Pageable pageable=  PageRequest.of(page,size);
         int start = (int) pageable.getOffset();
         int end;
+        HttpHeaders headers= new HttpHeaders();
+        headers.add("Access-Control-Expose-Headers", "page,size,totalPages,totalResults");
+        headers.add("page",String.valueOf(pageable.getPageNumber()));
+        headers.add("size",String.valueOf(pageable.getPageSize()));
+
         if(args.isEmpty())
         {
-            List<Demand> res =this.demandRepository.all().orElseThrow(ResourceNotFoundException::new);
+            List<Demand> res =this.demandRepository.all().orElse(new ArrayList<>());
             end = Math.min((start + pageable.getPageSize()), res.size());
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
+
             try {
-                return new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent();
+                return ResponseEntity.ok().headers(headers).body(new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent());
             }catch (IllegalArgumentException ex)
             {
-                throw new ResourceNotFoundException("Pas de pages!");
+                return ResponseEntity.ok().headers(headers).body(res);
+            }catch (IndexOutOfBoundsException ex)
+            {
+                return ResponseEntity.ok().headers(headers).body(res);
             }
         }
 
@@ -98,26 +127,30 @@ public class DemandController implements IResource<Demand>  {
 
         for (Map.Entry<String,String> e:
                 args.entrySet()) {
-                res.addAll(this.demandRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<Demand>()));
-        }
-        if (res.isEmpty()){
-            throw new ResourceNotFoundException();
+                res.addAll(this.demandRepository.search(e.getKey(),e.getValue(),sort).orElse(new ArrayList<Demand>()));
         }
 
         try {
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
             end = Math.min((start + pageable.getPageSize()), res.size());
-            return new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent();
+            return ResponseEntity.ok().headers(headers).body(new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent());
         }catch (IllegalArgumentException ex)
         {
-            throw new ResourceNotFoundException();
+            return ResponseEntity.ok().headers(headers).body(res);
+        }catch (IndexOutOfBoundsException ex)
+        {
+            return ResponseEntity.ok().headers(headers).body(res);
         }
     }
 
     @Override
-    public Demand findById(String id) throws ResourceNotFoundException {
-        return this.demandRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CUSTOMER')")
+    public ResponseEntity<Demand> findById(String id) throws ResourceNotFoundException {
+        return ResponseEntity.ok().body(this.demandRepository.findById(id).orElseThrow(ResourceNotFoundException::new));
     }
     @GetMapping("/user/{id}")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('TEAMMANAGER') or hasRole('CUSTOMER')")
     public List<Demand> findByUser(@PathVariable(value = "id")String id) throws ResourceNotFoundException {
         return this.demandRepository.allByUser(id).orElseThrow(ResourceNotFoundException::new);
     }

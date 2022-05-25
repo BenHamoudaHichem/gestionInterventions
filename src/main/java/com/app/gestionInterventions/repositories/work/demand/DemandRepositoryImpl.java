@@ -107,13 +107,9 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
     }
 
     @Override
-    public Optional<List<Demand>> search(String key, String value, boolean crescent, String factory) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = Aggregation.sort(Sort.by(direction, factory));
+    public Optional<List<Demand>> search(String key, String value, Sort sort) {
+
+        SortOperation sortOperation = Aggregation.sort(sort);
         MatchOperation matchOperation =Aggregation.match(Criteria.where(key).regex(value));;
 
 
@@ -124,8 +120,7 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
 
     @Override
     public Optional<List<Demand>> search(String key, String value) {
-
-        return this.search(key,value,false,"createdAt") ;
+        return this.search(key,value,Sort.by(Sort.Direction.DESC,"createdAt")) ;
     }
 
     @Override

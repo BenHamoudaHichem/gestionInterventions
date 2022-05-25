@@ -9,7 +9,7 @@ public class QuantityValue {
     @NotBlank
     private Float quantityToUse;
     @Nullable
-    private EMeasure measure;
+    private final EMeasure measure;
 
     public QuantityValue(Float quantityToUse, @Nullable EMeasure measure) {
         this.quantityToUse = quantityToUse;
@@ -29,7 +29,4 @@ public class QuantityValue {
         this.quantityToUse = quantityToUse;
     }
 
-    public void setMeasure(@Nullable EMeasure measure) {
-        this.measure = measure;
-    }
 }

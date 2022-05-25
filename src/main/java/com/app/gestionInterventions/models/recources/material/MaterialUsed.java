@@ -2,6 +2,7 @@ package com.app.gestionInterventions.models.recources.material;
 
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.additional.QuantityValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
@@ -13,10 +14,11 @@ public class MaterialUsed extends Material {
     private QuantityValue quantityToUse;
     private LocalDateTime dateOfUse;
 
-    public MaterialUsed(String id, String name, String description, QuantityValue totalQuantity, Date dateOfPurchase, Address address, Status status, QuantityValue quantityToUse, LocalDateTime dateOfUse) {
-        super(id, name, description, totalQuantity, dateOfPurchase, address, status);
+    @JsonCreator
+    public MaterialUsed(String id, String name, String description, QuantityValue totalQuantity, Date dateOfPurchase, Address address,ECategory category, Status status, QuantityValue quantityToUse, LocalDateTime dateOfUse) {
+        super(id, name, description, totalQuantity, dateOfPurchase, address,category, status);
         this.quantityToUse = quantityToUse;
-        this.dateOfUse = dateOfUse;
+        this.dateOfUse = dateOfUse==null ?LocalDateTime.now():dateOfUse;
     }
 
     public QuantityValue getQuantityToUse() {
@@ -34,4 +36,7 @@ public class MaterialUsed extends Material {
     public void setDateOfUse(LocalDateTime dateOfUse) {
         this.dateOfUse = dateOfUse;
     }
+
+
+
 }

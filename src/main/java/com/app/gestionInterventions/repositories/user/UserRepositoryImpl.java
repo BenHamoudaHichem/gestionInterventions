@@ -139,13 +139,8 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         return Optional.ofNullable(this.mongoTemplate.find(query,User.class));
     }
     @Override
-    public Optional<List<User>> search(String key, String value, boolean crescent, String factory) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = Aggregation.sort(Sort.by(direction, factory));
+    public Optional<List<User>> search(String key, String value, Sort sort) {
+        SortOperation sortOperation = Aggregation.sort(sort);
         MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
 
         Aggregation aggregation = newAggregation(sortOperation,matchOperation);
@@ -156,7 +151,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
     @Override
     public Optional<List<User>> search(String key, String value) {
 
-        return this.search(key,value,true,"name") ;
+        return this.search(key,value,Sort.by(Sort.Direction.DESC,"createdAt")) ;
     }
 
     public long countByRole(Role role)

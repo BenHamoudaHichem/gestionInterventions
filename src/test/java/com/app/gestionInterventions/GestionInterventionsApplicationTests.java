@@ -4,7 +4,9 @@ import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.additional.EMeasure;
 import com.app.gestionInterventions.models.additional.QuantityValue;
+import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
+import com.app.gestionInterventions.models.recources.material.MaterialUsed;
 import com.app.gestionInterventions.models.recources.material.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
@@ -13,6 +15,7 @@ import com.app.gestionInterventions.models.user.role.Role;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.repositories.ICrud;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
@@ -27,24 +30,30 @@ import com.app.gestionInterventions.services.GeocodeService;
 import com.app.gestionInterventions.services.TNCitiesClient;
 import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import com.app.gestionInterventions.services.statistics.MaterialStatistic;
+import com.app.gestionInterventions.services.statistics.PairCustom;
 import com.github.javafaker.Faker;
 import com.github.javafaker.service.FakeValuesService;
 import com.github.javafaker.service.RandomService;
 import com.mongodb.assertions.Assertions;
 import com.sun.mail.smtp.SMTPSendFailedException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @SpringBootTest
 //@DataMongoTest(excludeAutoConfiguration = EmbeddedMongoAutoConfiguration.class)
@@ -103,24 +112,26 @@ class GestionInterventionsApplicationTests {
 		System.out.println(this.roleRepository.findAll());
 	}
 	@Test
-	void createMaterial()
+	void createMateriau()
 	{
 		Random random=new Random();
 		Faker faker ;
 		Material material;
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("en-GB"), new RandomService());
-		List<String>materialNameList=new ArrayList<>(getDistinctMaterial());
-		for (int i = 0; i <10 ; i++) {
+		List<String>materialNameList=new ArrayList<>(getDistinctMaterieau());
+
+		for (int i = 0; i <materialNameList.size() ; i++) {
 			faker = new Faker();
 			material=new Material(
 					null,
-					materialNameList.remove(random.nextInt(materialNameList.size())),
+					materialNameList.get(i),
 					fakeValuesService.regexify("[A-Za-z]{165}"),
-					 new QuantityValue(getRandomFloat(), EMeasure.Meter),
+					 new QuantityValue(getRandomFloat(), EMeasure.Tons),
 
 					faker.date().birthday(7,10),
 					getAddress(faker),
+					ECategory.Matter,
 					Status.Functional
 
 			);
@@ -138,14 +149,61 @@ class GestionInterventionsApplicationTests {
 
 
 	}
+	@Test
+	void createMaterial()
+	{
+		Random random=new Random();
+		Material material;
+		FakeValuesService fakeValuesService = new FakeValuesService(
+				new Locale("en-GB"), new RandomService());
+		List<String>materialNameList=new ArrayList<>(getDistinctMaterial());
+
+		materialNameList.forEach(i->{
+
+			for (int j = 1; j < random.nextInt(6)+3; j++) {
+				Faker faker = new Faker();
+
+
+				Assertions.assertNotNull(materialRepository.create(new Material(
+						null,
+						i,
+						fakeValuesService.regexify("[A-Za-z]{165}"),
+						new QuantityValue(getRandomFloat(), EMeasure.Unity),
+
+						faker.date().birthday(7,10),
+						getAddress(faker),
+						ECategory.Material,
+						Status.Functional
+
+				)));
+				System.out.println("created."+j);
+				try {
+					TimeUnit.SECONDS.sleep(1);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		for (int i = 0; i <materialNameList.size() ; i++) {
+
+
+
+
+		}
+
+
+	}
 
 	@Test
-	public void createCategory(){
-		Assertions.assertNotNull(this.categoryRepository.create(new ArrayList<Category>(
-				Arrays.asList(new Category(null,"Traveaux publique")
-						//new Category(null,"Fuites")
-						)
-		)));}
+	public void createCategory() {
+		getSomeCategoriesNames().forEach(i -> {
+			Assertions.assertNotNull(this.categoryRepository.create(new ArrayList<Category>(
+					Arrays.asList(new Category(null, i)
+					)
+			)));
+		});
+
+	}
 	@Test
 	public void createCustomer()
 	{
@@ -153,7 +211,7 @@ class GestionInterventionsApplicationTests {
 		FakeValuesService fakeValuesService = new FakeValuesService(
 				new Locale("fr", "FRANCE", "WIN"), new RandomService());
 		User user;
-		for (int i = 0; i <25 ; i++) {
+		for (int i = 0; i <30 ; i++) {
 			user=new User(
 					null,
 					faker.name().firstName(),
@@ -228,7 +286,7 @@ class GestionInterventionsApplicationTests {
 	{
 		Random ran = new Random();
 
-		for (int i = 1; i <14 ; i++) {
+		for (int i = 0; i <21 ; i++) {
 			List<User>availableMembers=teamRepository.availableMembers();
 			System.out.println(availableMembers.size());
 			Team team=this.teamRepository.create(new Team(null,
@@ -257,7 +315,7 @@ class GestionInterventionsApplicationTests {
 		Random ran = new Random();
 
 		List<User>users=userRepository.findByRoLe(roleRepository.findByName(ERole.ROLE_CUSTOMER).get()).get();
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < 50; i++) {
 			faker = new Faker();
 			demand = new Demand(
 					null,
@@ -266,9 +324,15 @@ class GestionInterventionsApplicationTests {
 					this.getAddress(faker),
 					com.app.gestionInterventions.models.work.demand.Status.In_Progress,
 					users.get(ran.nextInt(users.size())),
-					null
+					LocalDateTime.of(2022,ran.nextInt(4)+1,ran.nextInt(29)+1,10,30)
 			);
 			Assertions.assertNotNull(demandRepository.create(demand));
+			System.out.println("Created "+i);
+			try {
+				TimeUnit.SECONDS.sleep(1);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -279,22 +343,23 @@ class GestionInterventionsApplicationTests {
 				new Locale("en-GB"), new RandomService());
 		Random ran = new Random();
 		Faker faker;
-		for (int i = 1; i < 4; i++) {
+		for (int i = 1; i < 10; i++) {
 			faker=new Faker();
-			demandList=demandRepository.findDemandsByStatus(com.app.gestionInterventions.models.work.demand.Status.In_Progress).subList(1,ran.nextInt(1)+4);
+			demandList=demandRepository.findDemandsByStatus(com.app.gestionInterventions.models.work.demand.Status.In_Progress).subList(1,ran.nextInt(1)+3);
 
-			Date startedAt=Date.from(LocalDate.of(2022,ran.nextInt(11)+1,ran.nextInt(29)+1).atStartOfDay(ZoneId.systemDefault()).toInstant());
-			Date expiredAt=Date.from(LocalDate.of(2023,ran.nextInt(11)+1,ran.nextInt(29)+1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+			Date startedAt=Date.from(LocalDate.of(2022,ran.nextInt(11)+1,ran.nextInt(27)+1).atStartOfDay(ZoneId.systemDefault()).toInstant());
+			Date expiredAt=Date.from(LocalDate.of(2023,ran.nextInt(11)+1,ran.nextInt(27)+1).atStartOfDay(ZoneId.systemDefault()).toInstant());
 			Assertions.assertNotNull(interventionRepository.create(new Intervention(
 					null,
 					fakeValuesService.regexify("[A-Za-z]{17}")+i,
 					fakeValuesService.regexify("[A-Za-z ]{250}"),
-					categoryRepository.all().get().get(ran.nextInt(2)),
+					categoryRepository.all().get().get(ran.nextInt(4)),
 					demandList.get(0).getAddress(),
-					startedAt,
+					Date.from(demandList.get(0).getCreatedAt().plusMonths(2).toInstant(ZoneOffset.ofHours(+2))),
 					expiredAt,
 					demandList,
-null,					teamRepository.teamAvailable().get().get(0),
+					getRandomMatterialList(),
+					teamRepository.teamAvailable().get().get(0),
 					com.app.gestionInterventions.models.work.intervention.Status.In_Progress,
 					null
 			)));
@@ -335,21 +400,67 @@ null,					teamRepository.teamAvailable().get().get(0),
 		return address;
 	}
 	@Test
-	public void somTests() {
+	public void somTests() throws ResourceNotFoundException {
 
-		Object p= roleRepository.findByName(ERole.ROLE_MEMBER);
-		System.out.println(((Role) p).getId());
+		System.out.println(new ArrayList<String>().subList(2,5)
+		);
+	}
+	public List<String> getDistinctMaterieau()
+	{
+		return Arrays.asList("acier",
+				"aluminium",
+				"béton",
+				"bitume",
+				"préfabriqués en béton",
+				"carrelage",
+				"carreau de plâtre",
+				"ciment",
+				"granulat",
+				"laine de roche",
+				"laine de verre",
+				"liant papier",
+				"pavé",
+				"plaque de plâtre",
+				"PVC",
+				"carreau de terre cuite",
+				"bois",
+				"Chaux",
+				"mortier",
+				"mortier adhésif",
+				"terre cuite",
+				"tuile",
+				"brique",
+				"verre",
+				"plâtre",
+				"plomb",
+				"zinc");
 
 	}
 	public List<String> getDistinctMaterial()
 	{
-		return Arrays.asList("calcium", "phosphorus", "sodium", "potassium", "magnesium", "manganese", "sulfur", "chloride", "iron", "iodine", "fluoride", "zinc", "copper", "selenium", "chromium" , "cobalt");
+		return Arrays.asList("Bulldozer", "Scarificateur", "Scraper tracté ", "Niveleuse", "Chargeuse", "Excavateur", "Camion", "Centrale de préparation du béton", "Camion toupie", "Grues", "Echafaudage", "Pompe d’épuisement", "Pompe d’enduit et mortier");
 
+	}
+	public List<String> getMaterialValue()
+	{
+		String value;
+		EMeasure eMeasure;
+		Random random= new Random();
+
+		if (random.nextBoolean()) {
+			value=getDistinctMaterieau().get(random.nextInt(getDistinctMaterieau().size()));
+			eMeasure=EMeasure.Tons;
+		}
+		else {
+			value=getDistinctMaterial().get(random.nextInt(getDistinctMaterieau().size()));
+			eMeasure=EMeasure.Unity;
+		}
+		return new ArrayList<String>(Arrays.asList(value,eMeasure.name()));
 	}
 	public Float getRandomFloat()
 	{
-		float leftLimit = 500F;
-		float rightLimit = 2001F;
+		float leftLimit = 5000F;
+		float rightLimit = 20001F;
 		float res= leftLimit + new Random().nextFloat() * (rightLimit - leftLimit);
 
 		return (float)Math.round(res*100.0f)/100.0f;
@@ -357,9 +468,28 @@ null,					teamRepository.teamAvailable().get().get(0),
 	public List<String>getSomeCategoriesNames()
 	{
 		return Arrays.asList(
-				"Contractualisation public","Sanitaires, fluides et climatisation",
+				"Entreprise publique","Sanitaires, fluides et climatisation",
 				"Travaux de terrassement et de remblayage","pavage des routes"
 		);
+	}
+	public List<MaterialUsed>getRandomMatterialList() throws ResourceNotFoundException {
+		Random random= new Random();
+		List<MaterialUsed>res=new ArrayList<>();
+		ECategory eCategory=ECategory.Material;
+		for (int i = 0; i < random.nextInt(3)+3; i++) {
+			eCategory=ECategory.Material;
+			if (i%2!=0) {
+				eCategory=ECategory.Matter;
+			}
+			ECategory finalECategory = eCategory;
+			List<MaterialUsed>randomList=materialRepository.availableMaterials().stream().filter(x->x.getCategory().equals(finalECategory)).map(y->
+							new MaterialUsed(y.getId(),y.getName(),y.getDescription(),y.getTotalQuantity(),y.getDateOfPurchase(),y.getAddress(),y.getCategory(),y.getStatus(),
+									new QuantityValue(y.getTotalQuantity().getQuantityToUse()/100.0f,y.getTotalQuantity().getMeasure()),LocalDateTime.now()))
+					.collect(Collectors.toList());
+			res.add(randomList.get(random.nextInt(4)));
+
+		}
+		return res;
 	}
 }
 

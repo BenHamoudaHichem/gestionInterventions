@@ -31,8 +31,10 @@ public class Material {
     protected Date dateOfPurchase;
     @NotNull
     protected Address address;
+    @NotNull
+    protected ECategory category;
     @NotBlank
-    private Status status;
+    protected Status status;
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public Material(@JsonProperty(value = "id",required = false) String id,
                     @JsonProperty(value = "name",required = false)String name,
@@ -40,6 +42,7 @@ public class Material {
                     @JsonProperty(value = "totalQuantity",required = false)QuantityValue totalQuantity,
                     @JsonProperty(value = "dateOfPurchase",required = false)Date dateOfPurchase,
                     @JsonProperty(value = "address",required = false)Address address,
+                    @JsonProperty(value = "category",required = false)ECategory category,
                     @JsonProperty(value = "status",required = false)Status status) {
         this.id = id;
         this.name = name;
@@ -47,11 +50,16 @@ public class Material {
         this.totalQuantity=totalQuantity;
         this.dateOfPurchase = dateOfPurchase;
         this.address = address;
+        this.category=category;
         this.status = status;
+        if (category.equals(ECategory.Material)) {
+            this.totalQuantity.setQuantityToUse(0.0f);
+        }
     }
 
-
-
+    public ECategory getCategory() {
+        return category;
+    }
 
     public Status getStatus() {
         return status;
@@ -112,8 +120,12 @@ public class Material {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || !(o instanceof Material)) {
+            return false;
+        }
         Material material = (Material) o;
         return getId().equals(material.getId());
     }

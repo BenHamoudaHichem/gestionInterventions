@@ -2,10 +2,11 @@ package com.app.gestionInterventions.controllers;
 
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
-import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
+import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
 import com.app.gestionInterventions.services.FileUploadService;
 import com.app.gestionInterventions.services.GeocodeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,7 +34,9 @@ public class MaterialController implements IResource<Material> {
     @Autowired
     MaterialRepositoryImpl materialRepository;
     @Autowired
-    FileUploadService fileStorageService;
+    InterventionRepositoryImpl interventionRepository;
+    @Autowired
+    FileUploadService fileUploadService;
     @Autowired
     GeocodeService geocodeService;
 
@@ -78,52 +82,89 @@ public class MaterialController implements IResource<Material> {
     }
 
     @Override
-    public List<Material> all(Map<String, String> args) throws ResourceNotFoundException {
-        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
-        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.materialRepository.all().orElse(new ArrayList<>()).size();
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<Material>> all(Map<String, String> args)  {
+        int page;
+        int size;
+        try {
+             page=args.containsKey("page")?Integer.parseInt(args.remove("page")):0;
+        }catch (NumberFormatException numberFormatException)
+        {
+             page=0;
+        }
+        try {
+            size=args.containsKey("size")?Integer.parseInt(args.remove("size")):10;
+
+        }catch (NumberFormatException numberFormatException)
+        {
+            size=10;
+        }
         String order= args.containsKey("direction")?args.remove("direction"):"desc";
         String property= args.containsKey("property")?args.remove("property"):"createdAt";
         Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
-        Pageable pageable=  PageRequest.of(page,size,sort);
+        Pageable pageable=  PageRequest.of(page,size);
         int start = (int) pageable.getOffset();
         int end;
+        HttpHeaders headers= new HttpHeaders();
+        headers.add("Access-Control-Expose-Headers", "page,size,totalPages,totalResults");
+        headers.add("page",String.valueOf(pageable.getPageNumber()));
+        headers.add("size",String.valueOf(pageable.getPageSize()));
         if(args.isEmpty())
         {
-            List<Material> res =this.materialRepository.all().orElseThrow(ResourceNotFoundException::new);
+            List<Material> res =this.materialRepository.all().orElse(new ArrayList<>());
             end = Math.min((start + pageable.getPageSize()), res.size());
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
+
             try {
-                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+                return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
             }catch (IllegalArgumentException ex)
             {
-                throw new ResourceNotFoundException("Pas de pages!");
+                return ResponseEntity.ok().headers(headers).body(res);
+            }catch (IndexOutOfBoundsException ex)
+            {
+                return ResponseEntity.ok().headers(headers).body(res);
             }
         }
         List<Material> res = new ArrayList<Material>();
         for (Map.Entry<String,String> e:
                 args.entrySet()) {
-            res.addAll(this.materialRepository.search(e.getKey(),e.getValue()).orElse(null));
+            res.addAll(this.materialRepository.search(e.getKey(),e.getValue(),sort).orElse(new ArrayList<>()));
         }
-
-        if (res.isEmpty()){
-            throw new ResourceNotFoundException();
-        }
-
         try {
             end = Math.min((start + pageable.getPageSize()), res.size());
-            return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
+
+            return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
         }catch (IllegalArgumentException ex)
         {
-            throw new ResourceNotFoundException();
+            return ResponseEntity.ok().headers(headers).body(res);
+        }
+        catch (IndexOutOfBoundsException ex)
+        {
+            return ResponseEntity.ok().headers(headers).body(res);
         }
     }
 
 
     @Override
-    public Material findById(String id) throws ResourceNotFoundException {
-        return materialRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Material> findById(String id) throws ResourceNotFoundException {
+        HttpHeaders headers= new HttpHeaders();
+        headers.add("Access-Control-Expose-Headers", "inIntervention");
+        headers.add("inIntervention",Boolean.toString(false));
+        Material material=materialRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+        if (material.getCategory().equals(ECategory.Material)&&!materialRepository.availableMaterials().contains(material)) {
+            headers.set("inIntervention",Boolean.toString(true));
+            headers.set("Access-Control-Expose-Headers", "inIntervention,location");
+            headers.add("location",interventionRepository.findInterventionByMaterial(material).get().getAddress().getLocation().toString());
+        }
+        return ResponseEntity.ok().headers(headers).body(material);
     }
 
     @PostMapping("/file")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> create(@RequestParam("file") MultipartFile file) throws IOException {
 
 
@@ -134,7 +175,7 @@ public class MaterialController implements IResource<Material> {
         try (OutputStream os = new FileOutputStream(dest)) {
             os.write(file.getBytes());
         }
-        this.materialRepository.create(FileUploadService.loadMaterial(dest,Material.class));
+        this.materialRepository.create(fileUploadService.serialize(dest,Material.class));
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre fichier est entregistré avec succès "));
     }
 }

@@ -21,8 +21,8 @@ public interface IResource<T> {
     @DeleteMapping(value = "/{id}",produces = {MediaType.APPLICATION_JSON_VALUE})
     ResponseEntity<MessageResponse>delete(@PathVariable(value = "id") String id)throws ResourceNotFoundException;
     @GetMapping(value = "",produces = {MediaType.APPLICATION_JSON_VALUE})
-    List<T> all(@RequestParam Map<String,String> allParams) throws ResourceNotFoundException;
+    ResponseEntity<List<T>> all(@RequestParam Map<String,String> allParams) ;
     @GetMapping(value = "/{id}",produces = {MediaType.APPLICATION_JSON_VALUE})
-    T findById(@PathVariable(value = "id",required = true) String id)throws ResourceNotFoundException;
+    ResponseEntity<T> findById(@PathVariable(value = "id",required = true) String id)throws ResourceNotFoundException;
 
 }

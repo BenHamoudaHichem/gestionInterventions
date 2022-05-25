@@ -19,6 +19,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,8 @@ public class UserController {
 
     @Autowired
     TeamRepositoryImpl teamRepository;
-
+    @Autowired
+    FileUploadService fileUploadService;
     @Autowired
     PasswordEncoder encoder;
 
@@ -184,43 +186,62 @@ public class UserController {
         try (OutputStream os = new FileOutputStream(dest)) {
             os.write(file.getBytes());
         }
-        this.userRepository.create(FileUploadService.loadMaterial(dest, User.class));
+        this.userRepository.create(fileUploadService.serialize(dest, User.class));
         return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Users file registered successfully!"));
     }
     @GetMapping("")
-    public List<User>all(@RequestParam Map<String, String> args) throws ResourceNotFoundException {
-        int page=args.containsKey("page")?Integer.getInteger(args.remove("page")):0;
-        int size=args.containsKey("size")?Integer.getInteger(args.remove("size")):this.userRepository.all().orElse(new ArrayList<>()).size();
+    public ResponseEntity<List<User>>all(@RequestParam Map<String, String> args)  {
+        int page;
+        int size;
+        try {
+            page=args.containsKey("page")?Integer.parseInt(args.remove("page")):0;
+        }catch (NumberFormatException numberFormatException)
+        {
+            page=0;
+        }
+        try {
+            size=args.containsKey("size")?Integer.parseInt(args.remove("size")):10;
+
+        }catch (NumberFormatException numberFormatException)
+        {
+            size=10;
+        }
         String order= args.containsKey("direction")?args.remove("direction"):"desc";
         String property= args.containsKey("property")?args.remove("property"):"createdAt";
         Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
         Pageable pageable=  PageRequest.of(page,size,sort);
         int start = (int) pageable.getOffset();
         int end;
+        HttpHeaders headers= new HttpHeaders();
+        headers.add("Access-Control-Expose-Headers", "page,size,totalPages,totalResults");
+        headers.add("page",String.valueOf(pageable.getPageNumber()));
+        headers.add("size",String.valueOf(pageable.getPageSize()));
+        List<User> res=new ArrayList<>();
+
         if(args.isEmpty())
         {
-            List<User> res =this.userRepository.all().orElseThrow(ResourceNotFoundException::new);
+            res =this.userRepository.all().orElse(new ArrayList<>());
             end = Math.min((start + pageable.getPageSize()), res.size());
-            try {
-                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
-            }catch (IllegalArgumentException ex)
-            {
-                throw new ResourceNotFoundException("Pas de pages!");
-            }
-        }
-        if(args.containsKey("role")&&args.containsValue(Status.Available.name()))
-        {
-            List<User> res = this.teamRepository.availableMembers();
-            end = Math.min((start + pageable.getPageSize()), res.size());
-            try {
-                return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
-            }catch (IllegalArgumentException ex)
-            {
-                throw new ResourceNotFoundException("Pas de pages!");
-            }
-        }
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
 
-        List<User> res = new ArrayList<User>();
+            try {
+                return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
+            }catch (IllegalArgumentException ex)
+            {
+                return ResponseEntity.ok().headers(headers).body(res);
+            }catch (IndexOutOfBoundsException ex)
+            {
+                return ResponseEntity.ok().headers(headers).body(res);
+            }
+        }
+        if(args.containsKey("role")&&args.containsKey("status")&&args.get("status").equals(Status.Available.name()))
+        {
+            res = this.teamRepository.availableMembers();
+            args.remove("role");
+            args.remove("status");
+
+        }
         for (Map.Entry<String,String> e:
                 args.entrySet()) {
             if (e.getKey().contains("role")) {
@@ -251,20 +272,23 @@ public class UserController {
 
             res.addAll(this.userRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<>()));
         }
-        if (res.isEmpty()){
-            throw new ResourceNotFoundException();
-        }
         try {
             end = Math.min((start + pageable.getPageSize()), res.size());
-            return new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent();
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
+
+            return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
         }catch (IllegalArgumentException ex)
         {
-            throw new ResourceNotFoundException();
+            return ResponseEntity.ok().headers(headers).body(res);
+        }catch (IndexOutOfBoundsException ex)
+        {
+            return ResponseEntity.ok().headers(headers).body(res);
         }
     }
 
     @GetMapping(value = "/{id}",produces = {MediaType.APPLICATION_JSON_VALUE})
-    public User findById(@PathVariable(value = "id",required = true) String id) throws ResourceNotFoundException {
-      return userRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+    public ResponseEntity<User> findById(@PathVariable(value = "id",required = true) String id) throws ResourceNotFoundException {
+      return ResponseEntity.ok().body(userRepository.findById(id).orElseThrow(ResourceNotFoundException::new));
     }
 }

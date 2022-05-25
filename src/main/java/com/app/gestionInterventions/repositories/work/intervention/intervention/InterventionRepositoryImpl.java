@@ -1,13 +1,13 @@
 package com.app.gestionInterventions.repositories.work.intervention.intervention;
 
+import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.models.recources.material.MaterialUsed;
-import com.app.gestionInterventions.models.recources.team.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
-import com.app.gestionInterventions.models.work.intervention.category.Category;
+import com.app.gestionInterventions.models.work.intervention.Status;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.app.gestionInterventions.repositories.tools.StashedRepository;
@@ -61,38 +61,58 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
         query.addCriteria(new Criteria("_id").is(intervention.getTeam().getId()));
 
         Team team=this.mongoTemplate.findOne(query,Team.class);
-        team.setStatus(Status.Unavailable);
+        team.setStatus(com.app.gestionInterventions.models.recources.team.Status.Unavailable);
         teamRepository.update(team.getId(),team);
         ArrayList<Demand> demands=new ArrayList<Demand>(intervention.getDemandList());
         demands.forEach(e-> {
-            e.setStatus(com.app.gestionInterventions.models.work.demand.Status.Accepted);
-            this.demandRepository.update(e.getId(),e);
+            Demand demand=this.demandRepository.findById(e.getId()).get();
+            demand.setStatus(com.app.gestionInterventions.models.work.demand.Status.Accepted);
+            this.demandRepository.update(demand.getId(),demand);
         });
         intervention.getMaterialsToBeUsed().forEach(i->{
-            Material material= materialRepository.findById(i.getId()).get();
-            material.getTotalQuantity().setQuantityToUse(material.getTotalQuantity().getQuantityToUse()-i.getQuantityToUse().getQuantityToUse());
+            if (i.getCategory().equals(ECategory.Matter))
+            {
+                Material material= materialRepository.findById(i.getId()).get();
+                float calcul=material.getTotalQuantity().getQuantityToUse()-i.getQuantityToUse().getQuantityToUse();
+
+                material.getTotalQuantity().setQuantityToUse(calcul);
+                i.getTotalQuantity().setQuantityToUse(calcul);
+
+                if (material.getTotalQuantity().getQuantityToUse()<=0.0f) {
+                    material.setStatus(com.app.gestionInterventions.models.recources.material.Status.Expired);
+                }
+                materialRepository.update(material.getId(),material);
+
+            }
         });
         return Optional.of(this.mongoTemplate.save(intervention));
     }
 
     @Override
     public long update(String id, Intervention intervention) {
+        Intervention oldIntervention= findById(id).get();
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-
-
-
         Update update =new Update();
-
-
         update.set("title",intervention.getTitle());
         update.set("description",intervention.getDescription());
-        update.set("startedAt",intervention.getStartedAt());
         update.set("expiredAt",intervention.getExpiredAt());
-        update.set("category",new DBRef("categories",new ObjectId(intervention.getCategory().getId())));
-        update.set("team",new DBRef("teams",new ObjectId(intervention.getTeam().getId())));
-        update.set("materialsToBeUsed",intervention.getMaterialsToBeUsed());//.stream().map(x->new DBRef("materials",new ObjectId(x.getId()))).collect(Collectors.toList()));
         update.set("demandList",intervention.getDemandList().stream().map(x->new DBRef("demands",new ObjectId(x.getId()))).collect(Collectors.toList()));
+        intervention.getMaterialsToBeUsed().forEach(i->{
+            if (i.getCategory().equals(ECategory.Matter)&&oldIntervention.getMaterialsToBeUsed().contains(i)) {
+                Material material= materialRepository.findById(i.getId()).get();
+                float calcul=material.getTotalQuantity().getQuantityToUse()+(i.getQuantityToUse().getQuantityToUse()-oldIntervention.getMaterialsToBeUsed().stream().filter(x->x.equals(i)).findFirst().get().getQuantityToUse().getQuantityToUse());
+                material.getTotalQuantity().setQuantityToUse(calcul);
+                i.getTotalQuantity().setQuantityToUse(calcul);
+                if (material.getCategory().equals(ECategory.Matter)&&material.getTotalQuantity().getQuantityToUse()<=0.0f) {
+                    material.setStatus(com.app.gestionInterventions.models.recources.material.Status.Expired);
+                }
+
+                materialRepository.update(material.getId(),material);
+            }
+
+        });
+        update.set("materialsToBeUsed",intervention.getMaterialsToBeUsed());//.stream().map(x->new DBRef("materials",new ObjectId(x.getId()))).collect(Collectors.toList()));
 
         update.set("status",intervention.getStatus());
         return this.mongoTemplate.updateFirst(query,update,Intervention.class).getModifiedCount();
@@ -144,13 +164,9 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     }
 
     @Override
-    public Optional<List<Intervention>> search(String key, String value, boolean crescent, String factory) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = Aggregation.sort(Sort.by(direction, factory));
+    public Optional<List<Intervention>> search(String key,String value,Sort sort) {
+
+        SortOperation sortOperation = Aggregation.sort(sort);
 
         MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
         Aggregation aggregation = newAggregation(sortOperation,matchOperation);
@@ -161,7 +177,7 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     @Override
     public Optional<List<Intervention>> search(String key, String value) {
 
-        return this.search(key,value,true,"name") ;
+        return this.search(key,value,Sort.by(Sort.Direction.DESC,"createdAt")) ;
     }
     public List<MaterialUsed> allmaterialUsed()
     {
@@ -171,6 +187,7 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     {
         return this.mongoTemplate.insertAll(interventionList).size();
     }
+
     @Override
     public  void dropCollection()
     {
@@ -181,5 +198,9 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
         this.mongoTemplate.indexOps(Intervention.class).ensureIndex(
                 new CompoundIndexDefinition(new Document()).on("title", Sort.Direction.ASC).unique()
         );
+    }
+    public Optional<Intervention> findInterventionByMaterial(Material material)
+    {
+        return mongoTemplate.findAll(Intervention.class).stream().filter(y->y.getStatus().equals(Status.In_Progress)&&y.getMaterialsToBeUsed().contains(material)).findFirst();
     }
 }

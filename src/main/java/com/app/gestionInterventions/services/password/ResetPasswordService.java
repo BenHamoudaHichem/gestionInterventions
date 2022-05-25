@@ -45,9 +45,7 @@ public class ResetPasswordService {
     public boolean doUpdate(String cryptedtoken,String newPassword)
     {
         String token = (cryptedtoken);
-        System.out.println("token");
         if (this.validateToken(token)) {
-            System.out.println("token validated");
             return this.changePasswordService.doUpdate(resetPasswordTokenRepository.findByToken(token).get().getUser(),newPassword);
         }
         return false;
