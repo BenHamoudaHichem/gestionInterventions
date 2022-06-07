@@ -24,6 +24,7 @@ import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
+import com.app.gestionInterventions.services.FileUploadService;
 import com.app.gestionInterventions.services.MailService;
 import com.app.gestionInterventions.services.password.AESPasswordEncoder;
 import com.app.gestionInterventions.services.GeocodeService;
@@ -47,6 +48,10 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -71,6 +76,7 @@ class GestionInterventionsApplicationTests {
 	TNCitiesClient tnCitiesClient;
 
 
+	FileUploadService fileUploadService= new FileUploadService();
 	GeocodeService geocodeService=new GeocodeService();
 
 	MaterialRepositoryImpl materialRepository;
@@ -400,10 +406,10 @@ class GestionInterventionsApplicationTests {
 		return address;
 	}
 	@Test
-	public void somTests() throws ResourceNotFoundException {
+	public void somTests() throws ResourceNotFoundException, URISyntaxException, FileNotFoundException {
 
-		System.out.println(new ArrayList<String>().subList(2,5)
-		);
+		File file = new File("C:\\Users\\hiche\\Downloads\\userData.csv");
+		System.out.println(fileUploadService.serialize(file,User.class));
 	}
 	public List<String> getDistinctMaterieau()
 	{
