@@ -1,10 +1,12 @@
 package com.app.gestionInterventions.repositories.work.intervention.intervention;
 
+import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.models.recources.material.MaterialUsed;
 import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.tools.Stashed;
+import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.work.demand.Demand;
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.models.work.intervention.Status;
@@ -25,10 +27,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
@@ -122,7 +124,7 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, Intervention.class)));
+        stashedRepository.create(new Stashed(null,this.mongoTemplate.findOne(query, Intervention.class), LocalDateTime.now()));
 
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, Intervention.class))).getDeletedCount();
     }
@@ -134,51 +136,90 @@ public class InterventionRepositoryImpl implements InterventionRepositoryCustom{
     }
 
     @Override
-    public Optional<Intervention> findById(String id) {
-        Query query = new Query();
-        query.addCriteria(new Criteria("_id").is(id));
-        return Optional.of(this.mongoTemplate.findOne(query,Intervention.class));
-    }
+    public Optional<List<Intervention>> searchOr(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+        entries.forEach((key,value)->{
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("address."+key).regex(value));
+                    System.out.println("1");
+                }
+            } catch (IntrospectionException e) {
+                criteriaList.add(new Criteria(key).regex(value));
+            }
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Team.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("team."+key).regex(value));
+                }
+            } catch (IntrospectionException e) {
+                criteriaList.add(new Criteria(key).regex(value));
+            }
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Material.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    HashMap map = new HashMap();
+                    map.put(key,value);
+                    criteriaList.add(new Criteria("materialsToBeUsed").all(materialRepository.searchAnd(map,Sort.by(Sort.Direction.DESC,"dateOfPurchase")).orElse(new ArrayList<>())));
+                }
+            } catch (IntrospectionException e) {
+                criteriaList.add(new Criteria(key).regex(value));
+            }
+        });
+        MatchOperation matchOperation = Aggregation.match(new Criteria().orOperator(criteriaList));
+        SortOperation sortOperation = new SortOperation(sort);
 
-    @Override
-    public Optional<List<Intervention>> all(int rows) {
-        Query query = new Query();
-        query.limit(rows);
-        return Optional.of(this.mongoTemplate.find(query,Intervention.class));
-    }
-
-    @Override
-    public Optional<List<Intervention>> all(int rows, boolean crescent, String factory) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = new SortOperation(Sort.by(direction, factory));
-
-        LimitOperation limitOperation = new LimitOperation(Long.parseLong(Integer.toString(rows)));
-        TypedAggregation<Intervention> typedAggregation = newAggregation(Intervention.class,sortOperation,limitOperation);
-        AggregationResults<Intervention> aggregationResults = this.mongoTemplate.aggregate(typedAggregation,Intervention.class);
-
+        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
+        AggregationResults<Intervention> aggregationResults = this.mongoTemplate.aggregate(aggregation,"interventions",Intervention.class);
         return Optional.of(aggregationResults.getMappedResults());
+
     }
 
     @Override
-    public Optional<List<Intervention>> search(String key,String value,Sort sort) {
+    public Optional<List<Intervention>> searchAnd(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+        entries.forEach((key,value)->{
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("address."+key).regex(value));return;
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Team.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class")&&!x.getName().equals("status"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("team."+key).regex(value));return;
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Material.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class")&&!x.getName().equals("status"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    HashMap map = new HashMap();
+                    map.put(key,value);
+                    criteriaList.add(new Criteria("materialsToBeUsed").all(materialRepository.searchOr(map,Sort.by(Sort.Direction.DESC,"dateOfPurchase")).orElse(new ArrayList<>())));
+                    return;
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+            criteriaList.add(new Criteria(key).regex(value));
 
-        SortOperation sortOperation = Aggregation.sort(sort);
+        });
+        MatchOperation matchOperation = Aggregation.match(new Criteria().andOperator(criteriaList));
+        SortOperation sortOperation = new SortOperation(sort);
 
-        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
         Aggregation aggregation = newAggregation(sortOperation,matchOperation);
         AggregationResults<Intervention> aggregationResults = this.mongoTemplate.aggregate(aggregation,"interventions",Intervention.class);
         return Optional.of(aggregationResults.getMappedResults());
     }
 
     @Override
-    public Optional<List<Intervention>> search(String key, String value) {
-
-        return this.search(key,value,Sort.by(Sort.Direction.DESC,"createdAt")) ;
+    public Optional<Intervention> findById(String id) {
+        Query query = new Query();
+        query.addCriteria(new Criteria("_id").is(id));
+        return Optional.of(this.mongoTemplate.findOne(query,Intervention.class));
     }
+
+
     public List<MaterialUsed> allmaterialUsed()
     {
         return mongoTemplate.findAll(Intervention.class).stream().flatMap(y-> y.getMaterialsToBeUsed().stream()).collect(Collectors.toList());

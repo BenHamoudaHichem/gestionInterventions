@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 @Repository
@@ -89,6 +90,7 @@ public class InterventionClosedRepositoryImpl implements InterventionClosedRepos
         query.addCriteria(new Criteria("_id").is(id));
         return Optional.of(this.mongoTemplate.findOne(query,InterventionClosed.class));
     }
+
 
     @Override
     public void dropCollection() {

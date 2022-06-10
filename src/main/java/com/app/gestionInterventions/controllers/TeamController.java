@@ -3,6 +3,7 @@ package com.app.gestionInterventions.controllers;
 import com.app.gestionInterventions.exceptions.EntityValidatorException;
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
 import com.app.gestionInterventions.models.recources.team.Team;
+import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.payload.response.MessageResponse;
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
 import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
@@ -121,11 +122,7 @@ public class TeamController implements IResource<Team> {
                 return ResponseEntity.ok().headers(headers).body(res);
             }
         }
-        List<Team> res = new ArrayList<Team>();
-        for (Map.Entry<String,String> e:
-                args.entrySet()) {
-            res.addAll(this.teamRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<>()));
-        }
+        List<Team> res = teamRepository.searchAnd(args,sort).orElse(new ArrayList<>());
         try {
             end = Math.min((start + pageable.getPageSize()), res.size());
             headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
@@ -133,10 +130,14 @@ public class TeamController implements IResource<Team> {
             return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
         }catch (IllegalArgumentException ex)
         {
-            return ResponseEntity.ok().headers(headers).body(res);
+            headers.set("totalPages", String.valueOf(-1));
+            headers.set("totalResults", String.valueOf(0));
+            return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
         }catch (IndexOutOfBoundsException ex)
         {
-            return ResponseEntity.ok().headers(headers).body(res);
+            headers.set("totalPages", String.valueOf(-1));
+            headers.set("totalResults", String.valueOf(0));
+            return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
         }
 
     }
@@ -145,7 +146,12 @@ public class TeamController implements IResource<Team> {
     @Override
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Team> findById(String id) throws ResourceNotFoundException {
+        Team team= teamRepository.findById(id).orElseThrow(ResourceNotFoundException::new);
+        Optional<Intervention>interventionOptional=teamRepository.findCurrentIntervention(team.getId());
         HttpHeaders headers= new HttpHeaders();
-        return ResponseEntity.ok().body(this.teamRepository.findById(id).orElseThrow(ResourceNotFoundException::new));
+        headers.add("Access-Control-Expose-Headers", "hasIntervention,currrentIntervention");
+        headers.add("hasIntervention",Boolean.toString(interventionOptional.isPresent()));
+        headers.add("currrentIntervention",interventionOptional.isPresent()==true?interventionOptional.get().getId():"");
+        return ResponseEntity.ok().headers(headers).body(team);
     }
 }

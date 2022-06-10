@@ -20,6 +20,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -92,6 +93,9 @@ public class CategoryRepositoryImpl implements CategoryRepositoryCustom {
         return Optional.ofNullable(this.mongoTemplate.findOne(query,Category.class));
 
     }
+
+
+
     public Optional<List<Category>> search(String key, String value) {
 
 

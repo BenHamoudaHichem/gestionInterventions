@@ -1,5 +1,6 @@
 package com.app.gestionInterventions.repositories.work.demand;
 
+import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.work.demand.Demand;
@@ -21,9 +22,11 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.*;
 
@@ -65,7 +68,7 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, User.class)));
+        stashedRepository.create(new Stashed<Demand>(null,this.mongoTemplate.findOne(query, Demand.class), LocalDateTime.now()));
 
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, Demand.class))).getDeletedCount();
     }
@@ -82,36 +85,22 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
         query.addCriteria(new Criteria("_id").is(id));
         return Optional.of(this.mongoTemplate.findOne(query,Demand.class));
     }
-
     @Override
-    public Optional<List<Demand>> all(int rows) {
-        Query query = new Query();
-        query.limit(rows);
-        return Optional.of(this.mongoTemplate.find(query,Demand.class));
-    }
+    public Optional<List<Demand>> searchOr(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
 
-    @Override
-    public Optional<List<Demand>> all(int rows, boolean crescent, String factory) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = new SortOperation(Sort.by(direction, factory));
-
-        LimitOperation limitOperation = new LimitOperation(Long.parseLong(Integer.toString(rows)));
-        TypedAggregation<Demand> typedAggregation = newAggregation(Demand.class,sortOperation,limitOperation);
-        AggregationResults<Demand> aggregationResults = this.mongoTemplate.aggregate(typedAggregation,Demand.class);
-
-        return Optional.of(aggregationResults.getMappedResults());
-    }
-
-    @Override
-    public Optional<List<Demand>> search(String key, String value, Sort sort) {
-
-        SortOperation sortOperation = Aggregation.sort(sort);
-        MatchOperation matchOperation =Aggregation.match(Criteria.where(key).regex(value));;
-
+        entries.forEach((key,value)->{
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("address."+key).regex(value));
+                    return;
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+        });
+        SortOperation sortOperation = new SortOperation(sort);
+        MatchOperation matchOperation = Aggregation.match(new Criteria().orOperator(criteriaList));
 
         Aggregation aggregation = newAggregation(sortOperation,matchOperation);
         AggregationResults<Demand> aggregationResults = this.mongoTemplate.aggregate(aggregation,"demands",Demand.class);
@@ -119,8 +108,27 @@ public class DemandRepositoryImpl implements DemandRepositoryCustom{
     }
 
     @Override
-    public Optional<List<Demand>> search(String key, String value) {
-        return this.search(key,value,Sort.by(Sort.Direction.DESC,"createdAt")) ;
+    public Optional<List<Demand>> searchAnd(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+
+        entries.forEach((key,value)->{
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("address."+key).regex(value));
+                    return;
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+            criteriaList.add(new Criteria(key).regex(value));
+
+        });
+        SortOperation sortOperation = new SortOperation(sort);
+        MatchOperation matchOperation = Aggregation.match(new Criteria().andOperator(criteriaList));
+
+        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
+        AggregationResults<Demand> aggregationResults = this.mongoTemplate.aggregate(aggregation,"demands",Demand.class);
+        return Optional.of(aggregationResults.getMappedResults());
     }
 
     @Override

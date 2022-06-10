@@ -229,10 +229,14 @@ public class UserController {
                 return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
             }catch (IllegalArgumentException ex)
             {
-                return ResponseEntity.ok().headers(headers).body(res);
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
             }catch (IndexOutOfBoundsException ex)
             {
-                return ResponseEntity.ok().headers(headers).body(res);
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
             }
         }
         if(args.containsKey("role")&&args.containsKey("status")&&args.get("status").equals(Status.Available.name()))
@@ -240,39 +244,27 @@ public class UserController {
             res = this.teamRepository.availableMembers();
             args.remove("role");
             args.remove("status");
+            end = Math.min((start + pageable.getPageSize()), res.size());
+            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
+            headers.add("totalResults",String.valueOf(res.size()));
 
-        }
-        for (Map.Entry<String,String> e:
-                args.entrySet()) {
-            if (e.getKey().contains("role")) {
-                Role role;
-                switch (e.getValue()) {
-                    case "manager":
-                        role = roleRepository.findByName(ERole.ROLE_MANAGER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-
-                        break;
-                    case "member":
-                        role = roleRepository.findByName(ERole.ROLE_MEMBER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-
-                        break;
-                    case "tm":
-                        role = roleRepository.findByName(ERole.ROLE_TEAMMANAGER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-
-                        break;
-                    default:
-                        role = roleRepository.findByName(ERole.ROLE_CUSTOMER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                }
-                res.addAll(this.userRepository.findByRoLe(role).orElse(new ArrayList<>()));
-                continue;
+            try {
+                return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
+            }catch (IllegalArgumentException ex)
+            {
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
+            }catch (IndexOutOfBoundsException ex)
+            {
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
             }
 
-            res.addAll(this.userRepository.search(e.getKey(),e.getValue()).orElse(new ArrayList<>()));
         }
         try {
+            res=userRepository.searchAnd(args,sort).orElse(new ArrayList<>());
             end = Math.min((start + pageable.getPageSize()), res.size());
             headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
             headers.add("totalResults",String.valueOf(res.size()));
@@ -280,10 +272,14 @@ public class UserController {
             return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
         }catch (IllegalArgumentException ex)
         {
-            return ResponseEntity.ok().headers(headers).body(res);
+            headers.set("totalPages", String.valueOf(-1));
+            headers.set("totalResults", String.valueOf(0));
+            return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
         }catch (IndexOutOfBoundsException ex)
         {
-            return ResponseEntity.ok().headers(headers).body(res);
+            headers.set("totalPages", String.valueOf(-1));
+            headers.set("totalResults", String.valueOf(0));
+            return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
         }
     }
 

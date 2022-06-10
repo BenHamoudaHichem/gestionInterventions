@@ -7,6 +7,7 @@ import com.app.gestionInterventions.models.additional.QuantityValue;
 import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.models.recources.material.Status;
+import com.app.gestionInterventions.models.recources.team.Team;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.repositories.user.role.RoleRepository;

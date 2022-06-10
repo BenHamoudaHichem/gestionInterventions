@@ -9,6 +9,7 @@ import com.app.gestionInterventions.models.recources.material.Material;
 import com.app.gestionInterventions.models.recources.material.MaterialUsed;
 import com.app.gestionInterventions.models.recources.material.Status;
 import com.app.gestionInterventions.models.recources.team.Team;
+import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.user.User;
 import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
@@ -19,16 +20,14 @@ import com.app.gestionInterventions.repositories.ICrud;
 import com.app.gestionInterventions.repositories.resources.material.MaterialRepositoryImpl;
 
 import com.app.gestionInterventions.repositories.resources.team.TeamRepositoryImpl;
+import com.app.gestionInterventions.repositories.tools.StashedRepository;
 import com.app.gestionInterventions.repositories.user.UserRepositoryImpl;
 import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.app.gestionInterventions.repositories.work.demand.DemandRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.category.CategoryRepositoryImpl;
 import com.app.gestionInterventions.repositories.work.intervention.intervention.InterventionRepositoryImpl;
-import com.app.gestionInterventions.services.FileUploadService;
-import com.app.gestionInterventions.services.MailService;
+import com.app.gestionInterventions.services.*;
 import com.app.gestionInterventions.services.password.AESPasswordEncoder;
-import com.app.gestionInterventions.services.GeocodeService;
-import com.app.gestionInterventions.services.TNCitiesClient;
 import com.app.gestionInterventions.services.statistics.DemandStatistic;
 import com.app.gestionInterventions.services.statistics.MaterialStatistic;
 import com.app.gestionInterventions.services.statistics.PairCustom;
@@ -37,17 +36,29 @@ import com.github.javafaker.service.FakeValuesService;
 import com.github.javafaker.service.RandomService;
 import com.mongodb.assertions.Assertions;
 import com.sun.mail.smtp.SMTPSendFailedException;
+import javassist.tools.reflect.Reflection;
+import org.apache.catalina.util.Introspection;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.beans.PropertyUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
+import org.yaml.snakeyaml.introspector.PropertyUtils;
 
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URI;
@@ -69,6 +80,7 @@ class GestionInterventionsApplicationTests {
 	@Autowired
 	MailService mailService;
 	DemandStatistic demandStatistic= new DemandStatistic();
+	StashedRepository stashedRepository;
 
     MaterialStatistic materialStatistic=new MaterialStatistic();
 
@@ -79,6 +91,7 @@ class GestionInterventionsApplicationTests {
 	FileUploadService fileUploadService= new FileUploadService();
 	GeocodeService geocodeService=new GeocodeService();
 
+
 	MaterialRepositoryImpl materialRepository;
 	UserRepositoryImpl userRepository;
 	@Autowired
@@ -88,6 +101,7 @@ class GestionInterventionsApplicationTests {
 	CategoryRepositoryImpl categoryRepository;
 	TeamRepositoryImpl teamRepository;
 
+	CustomClassLoader customClassLoader=new CustomClassLoader();
 
 	@Autowired MongoTemplate mongoTemplate;
 	@BeforeEach
@@ -101,6 +115,7 @@ class GestionInterventionsApplicationTests {
 		this.interventionRepository =new InterventionRepositoryImpl(mongoTemplate);
 		this.teamRepository =new TeamRepositoryImpl(mongoTemplate);
 
+		stashedRepository=new StashedRepository(mongoTemplate);
 		this.passwordEncoder=new AESPasswordEncoder();
 
 	}
@@ -406,11 +421,15 @@ class GestionInterventionsApplicationTests {
 		return address;
 	}
 	@Test
-	public void somTests() throws ResourceNotFoundException, URISyntaxException, FileNotFoundException {
+	public void somTests() throws ResourceNotFoundException {
+		System.out.println(materialRepository.all().get().stream().filter(x-> {
+			try {
+				return x.getCategory().equals(ECategory.Material)&&!materialRepository.availableMaterials().contains(x);
+			} catch (ResourceNotFoundException e) {
+				return false;			}
+		}).collect(Collectors.toList()));
 
-		File file = new File("C:\\Users\\hiche\\Downloads\\userData.csv");
-		System.out.println(fileUploadService.serialize(file,User.class));
-	}
+		}
 	public List<String> getDistinctMaterieau()
 	{
 		return Arrays.asList("acier",

@@ -1,6 +1,7 @@
 package com.app.gestionInterventions.repositories.resources.material;
 
 import com.app.gestionInterventions.exceptions.ResourceNotFoundException;
+import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.recources.material.ECategory;
 import com.app.gestionInterventions.models.recources.material.Material;
 
@@ -16,11 +17,12 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
+import org.thymeleaf.standard.expression.SimpleExpression;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,11 +46,15 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     {
         return Optional.of(this.mongoTemplate.save(material));
     }
+    public Optional<List<Material>> create(List<Material> material)
+    {
+        return Optional.of(this.mongoTemplate.insertAll(material).stream().collect(Collectors.toList()));
+    }
 
     @Override
     public long update(String id, Material material) {
         Query query= new Query();
-        query.addCriteria(Criteria.where("_id").is(id));
+        query.addCriteria(Criteria.where("_id").is(material.getId()));
 
         Update update =new Update();
 
@@ -67,7 +73,7 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, Material.class)));
+        stashedRepository.create(new Stashed<Material>(null,this.mongoTemplate.findOne(query, Material.class), LocalDateTime.now()));
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, Material.class))).getDeletedCount();
     }
 
@@ -91,56 +97,48 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
     }
 
     @Override
-    public Optional<List<Material>> all(int rows) {
-        Query query = new Query();
-        query.limit(rows);
-        return Optional.of(this.mongoTemplate.find(query,Material.class));
-    }
-
-    @Override
-    public Optional<List<Material>> all(int rows, boolean crescent, String factory) {
-        Sort.Direction direction = Sort.Direction.ASC;
-        if(!crescent)
-        {
-            direction = Sort.Direction.DESC;
-        }
-        SortOperation sortOperation = new SortOperation(Sort.by(direction, factory));
-
-        LimitOperation limitOperation = new LimitOperation(Long.parseLong(Integer.toString(rows)));
-        TypedAggregation<Material> typedAggregation = newAggregation(Material.class,sortOperation,limitOperation);
-        AggregationResults<Material> aggregationResults = this.mongoTemplate.aggregate(typedAggregation,Material.class);
-
-        return Optional.of(aggregationResults.getMappedResults());
-    }
-
-    @Override
-    public Optional<List<Material>> search(String key, String value, Sort sort) {
-        if(key.equals("status")&&value.equals("Available"))
-        {
+    public Optional<List<Material>> searchOr(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+        entries.forEach((x,y)->{
             try {
-                return Optional.of(this.availableMaterials());
-            } catch (ResourceNotFoundException e) {
-                return Optional.of(new ArrayList<>());
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(a->!a.getName().equals("class")).map(a->a.getName()).collect(Collectors.toList()).contains(x)){
+                    criteriaList.add(Criteria.where("address."+x).regex(y));
+                }
+                else{
+                    criteriaList.add(Criteria.where(x).regex(y));
+                }
+            } catch (IntrospectionException e) {
+                return;
             }
-        }
-        SortOperation sortOperation = Aggregation.sort(sort);
-
-        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
-        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
+        });
+        SortOperation sortOperation = new SortOperation(sort);
+        MatchOperation matchOperation = Aggregation.match(new Criteria().orOperator(criteriaList));
+        Aggregation aggregation = newAggregation(matchOperation,sortOperation);
         AggregationResults<Material> aggregationResults = this.mongoTemplate.aggregate(aggregation,"materials",Material.class);
         return Optional.of(aggregationResults.getMappedResults());
     }
 
     @Override
-    public Optional<List<Material>> search(String key, String value) {
-
-        return this.search(key,value,Sort.by(Sort.Direction.DESC,"dateOfPurchase")) ;
+    public Optional<List<Material>> searchAnd(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+        entries.forEach((x,y)->{
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(a->!a.getName().equals("class")).map(a->a.getName()).collect(Collectors.toList()).contains(x)){
+                    criteriaList.add(Criteria.where("address."+x).regex(y));
+                }
+                else{
+                    criteriaList.add(Criteria.where(x).regex(y));
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+        });
+        SortOperation sortOperation = new SortOperation(sort);
+        MatchOperation matchOperation = Aggregation.match(new Criteria().andOperator(criteriaList));
+        Aggregation aggregation = newAggregation(matchOperation,sortOperation);
+        AggregationResults<Material> aggregationResults = this.mongoTemplate.aggregate(aggregation,"materials",Material.class);
+        return Optional.of(aggregationResults.getMappedResults());
     }
-    public int create(List<Material> materialList)
-    {
-        return this.mongoTemplate.insertAll(materialList).size();
-    }
-
     @Override
     public  void dropCollection()
     {
@@ -157,7 +155,6 @@ public class MaterialRepositoryImpl implements MaterialRepositoryCustom{
         if (!mongoTemplate.collectionExists(Intervention.class)) {
             return this.all().get();
         }
-        System.out.println(mongoTemplate.findAll(Intervention.class).stream().filter(a->a.getStatus().equals(com.app.gestionInterventions.models.work.intervention.Status.In_Progress)).flatMap(a->a.getMaterialsToBeUsed().stream().filter(b->b.getCategory().equals(ECategory.Material))).collect(Collectors.toList()).size());
         return this.mongoTemplate.findAll(Material.class).stream().filter(x->!(
               mongoTemplate.findAll(Intervention.class).stream().filter(a->a.getStatus().equals(com.app.gestionInterventions.models.work.intervention.Status.In_Progress)).flatMap(a->a.getMaterialsToBeUsed().stream().filter(b->b.getCategory().equals(ECategory.Material))).collect(Collectors.toList())
             .contains(x))&&!(x.getStatus().equals(Status.Broken_down)||x.getStatus().equals(Status.Expired)||x.getStatus().equals(Status.Stoled))).collect(Collectors.toList());

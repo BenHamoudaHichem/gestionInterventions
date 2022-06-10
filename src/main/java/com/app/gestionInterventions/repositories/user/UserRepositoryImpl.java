@@ -1,11 +1,14 @@
 package com.app.gestionInterventions.repositories.user;
 
+import com.app.gestionInterventions.models.additional.Address;
 import com.app.gestionInterventions.models.tools.Stashed;
 import com.app.gestionInterventions.models.user.User;
+import com.app.gestionInterventions.models.user.role.ERole;
 import com.app.gestionInterventions.models.user.role.Role;
 
 import com.app.gestionInterventions.models.work.intervention.Intervention;
 import com.app.gestionInterventions.repositories.tools.StashedRepository;
+import com.app.gestionInterventions.repositories.user.role.RoleRepository;
 import com.mongodb.DBRef;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -24,10 +27,10 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import javax.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
@@ -35,6 +38,8 @@ import static org.springframework.data.mongodb.core.aggregation.Aggregation.newA
 @Repository
 public class UserRepositoryImpl implements UserRepositoryCustom{
     private final MongoTemplate mongoTemplate;
+    @Autowired
+    private RoleRepository roleRepository;
     private StashedRepository stashedRepository;
     @Autowired
     public UserRepositoryImpl(MongoTemplate mongoTemplate) {
@@ -78,7 +83,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
     public long detele(String id) {
         Query query= new Query();
         query.addCriteria(Criteria.where("_id").is(id));
-        stashedRepository.create(new Stashed(this.mongoTemplate.findOne(query, User.class)));
+        stashedRepository.create(new Stashed(null,this.mongoTemplate.findOne(query, User.class), LocalDateTime.now()));
 
         return mongoTemplate.remove(Objects.requireNonNull(this.mongoTemplate.findOne(query, User.class))).getDeletedCount();
 
@@ -91,14 +96,59 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
     }
 
     @Override
+    public Optional<List<User>> searchAnd(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+        entries.forEach((key,value)->{
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("address."+key).regex(value));
+                    return;
+                }
+                if (key.contains("role")) {
+                    Role role;
+                    switch (value) {
+                        case "manager":
+                            role = roleRepository.findByName(ERole.ROLE_MANAGER)
+                                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                            break;
+
+                        case "member":
+                            role = roleRepository.findByName(ERole.ROLE_MEMBER)
+                                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                            break;
+
+                        case "tm":
+                            role = roleRepository.findByName(ERole.ROLE_TEAMMANAGER)
+                                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                            break;
+
+                        default:
+                            role = roleRepository.findByName(ERole.ROLE_CUSTOMER)
+                                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                    }
+                    criteriaList.add(new Criteria("roles").all(new DBRef("roles",new ObjectId(role.getId()))));
+                return;
+                }
+            } catch (IntrospectionException e) {
+                return;
+            }
+            criteriaList.add(new Criteria(key).regex(value));
+        });
+        SortOperation sortOperation = new SortOperation(sort);
+        MatchOperation matchOperation = Aggregation.match(new Criteria().andOperator(criteriaList));
+
+        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
+        AggregationResults<User> aggregationResults = this.mongoTemplate.aggregate(aggregation,"users",User.class);
+        return Optional.of(aggregationResults.getMappedResults());
+
+    }
+
+    @Override
     public Optional<User> findById(String id) {
         Query query = new Query();
         query.addCriteria(new Criteria("_id").is(id));
         return Optional.ofNullable(this.mongoTemplate.findOne(query, User.class));
     }
-
-
-
     @Override
     public Optional<List<User>> findByRole(Role role) {
         MatchOperation matchOperation = Aggregation.match(new Criteria("roles").all(role));
@@ -112,6 +162,54 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         Query query= new Query();
         query.addCriteria(Criteria.where("identifier").is(identifier));
         return Optional.ofNullable(this.mongoTemplate.findOne(query,User.class));
+    }
+
+    @Override
+    public Optional<List<User>> searchOr(Map<String, String> entries, Sort sort) {
+        List<Criteria> criteriaList= new ArrayList<>();
+        entries.forEach((key,value)->{
+            if (key.contains("role")) {
+                Role role;
+                switch (value) {
+                    case "manager":
+                        role = roleRepository.findByName(ERole.ROLE_MANAGER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+                        break;
+                    case "member":
+                        role = roleRepository.findByName(ERole.ROLE_MEMBER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+                        break;
+                    case "tm":
+                        role = roleRepository.findByName(ERole.ROLE_TEAMMANAGER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+                        break;
+                    default:
+                        role = roleRepository.findByName(ERole.ROLE_CUSTOMER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                }
+                criteriaList.add(new Criteria("roles").all(new DBRef("roles",new ObjectId(role.getId()))));
+                return;
+            }
+            try {
+                if(Arrays.stream(Introspector.getBeanInfo(Address.class).getPropertyDescriptors()).filter(x->(!x.getName().equals("class"))).map(x->x.getName()).collect(Collectors.toList()).contains(key)){
+                    criteriaList.add(new Criteria("address."+key).regex(value));
+                    return;
+                }
+            } catch (IntrospectionException e) {
+            return;
+            }
+            criteriaList.add(new Criteria(key).regex(value));
+        });
+        SortOperation sortOperation = new SortOperation(sort);
+        MatchOperation matchOperation = Aggregation.match(new Criteria().orOperator(criteriaList));
+
+        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
+        AggregationResults<User> aggregationResults = this.mongoTemplate.aggregate(aggregation,"users",User.class);
+        return Optional.of(aggregationResults.getMappedResults());
+
     }
 
     @Override
@@ -138,21 +236,6 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         query.addCriteria(Criteria.where("roles").all(new DBRef("roles",new ObjectId(role.getId()))));
         return Optional.ofNullable(this.mongoTemplate.find(query,User.class));
     }
-    @Override
-    public Optional<List<User>> search(String key, String value, Sort sort) {
-        SortOperation sortOperation = Aggregation.sort(sort);
-        MatchOperation matchOperation = Aggregation.match(new Criteria(key).regex(value));
-
-        Aggregation aggregation = newAggregation(sortOperation,matchOperation);
-        AggregationResults<User> aggregationResults = this.mongoTemplate.aggregate(aggregation,"users",User.class);
-        return Optional.of(aggregationResults.getMappedResults());
-    }
-
-    @Override
-    public Optional<List<User>> search(String key, String value) {
-
-        return this.search(key,value,Sort.by(Sort.Direction.DESC,"createdAt")) ;
-    }
 
     public long countByRole(Role role)
     {
@@ -171,6 +254,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom{
         return this.mongoTemplate.updateFirst(query,update, User.class).getModifiedCount();
 
     }
+
 
 
     private void checkIndex()

@@ -105,6 +105,7 @@ public class DemandController implements IResource<Demand>  {
         headers.add("page",String.valueOf(pageable.getPageNumber()));
         headers.add("size",String.valueOf(pageable.getPageSize()));
 
+
         if(args.isEmpty())
         {
             List<Demand> res =this.demandRepository.all().orElse(new ArrayList<>());
@@ -116,20 +117,17 @@ public class DemandController implements IResource<Demand>  {
                 return ResponseEntity.ok().headers(headers).body(new PageImpl<Demand>(res.subList(start, end), pageable, res.size()).getContent());
             }catch (IllegalArgumentException ex)
             {
-                return ResponseEntity.ok().headers(headers).body(res);
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
             }catch (IndexOutOfBoundsException ex)
             {
-                return ResponseEntity.ok().headers(headers).body(res);
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
             }
         }
-
-        List<Demand> res = new ArrayList<Demand>();
-
-        for (Map.Entry<String,String> e:
-                args.entrySet()) {
-                res.addAll(this.demandRepository.search(e.getKey(),e.getValue(),sort).orElse(new ArrayList<Demand>()));
-        }
-
+        List<Demand> res =demandRepository.searchAnd(args,sort).orElse(new ArrayList<>());
         try {
             headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
             headers.add("totalResults",String.valueOf(res.size()));

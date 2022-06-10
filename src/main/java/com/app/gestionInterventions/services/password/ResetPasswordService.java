@@ -51,11 +51,11 @@ public class ResetPasswordService {
         return false;
     }
 
-
     private String generateToken()
     {
         return UUID.randomUUID().toString().replace("/","");
     }
+
     public boolean validateToken(String token)
     {
         return this.resetPasswordTokenRepository.existsByToken(token)

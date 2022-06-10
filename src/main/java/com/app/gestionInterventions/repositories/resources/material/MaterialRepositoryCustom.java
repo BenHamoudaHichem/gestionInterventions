@@ -5,11 +5,11 @@ import com.app.gestionInterventions.repositories.ICrud;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface MaterialRepositoryCustom extends ICrud<Material> {
-    Optional<List<Material>> all(int rows);
-    Optional<List<Material>> all(int rows,boolean crescent, String factory);
-    Optional<List<Material>>search(String key, String value, Sort sort);
-    Optional<List<Material>>search(String key,String value);
+
+    Optional<List<Material>>searchOr(Map<String,String> entries, Sort sort);
+    Optional<List<Material>>searchAnd(Map<String,String> entries, Sort sort);;
 }

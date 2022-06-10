@@ -48,116 +48,109 @@ public class InterventionController implements IResource<Intervention> {
     @Override
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> create(Intervention intervention, BindingResult bindingResult) throws EntityValidatorException {
-        if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
-        {
-            throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
+        if (bindingResult.hasErrors() || bindingResult.hasFieldErrors()) {
+            throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField() + " : " + bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
         intervention.getAddress().setLocation(geocodeService.fromCity(intervention.getAddress()));
 
-        Optional<Intervention>interventionOptional=this.interventionRepository.create(intervention);
+        Optional<Intervention> interventionOptional = this.interventionRepository.create(intervention);
 
-        if (interventionOptional.isPresent())
-        {
-            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre intervention est enregistrée avec succès"));
+        if (interventionOptional.isPresent()) {
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED, "Votre intervention est enregistrée avec succès"));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST,"Erreur d'enregistrement de l'intervention"));
+        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.BAD_REQUEST, "Erreur d'enregistrement de l'intervention"));
     }
 
     @Override
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<MessageResponse> update(String id, Intervention intervention,BindingResult bindingResult) throws EntityValidatorException {
-        if (bindingResult.hasErrors()||bindingResult.hasFieldErrors())
-        {
-            throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField()+" : "+bindingResult.getAllErrors().get(0).getDefaultMessage());
+    public ResponseEntity<MessageResponse> update(String id, Intervention intervention, BindingResult bindingResult) throws EntityValidatorException {
+        if (bindingResult.hasErrors() || bindingResult.hasFieldErrors()) {
+            throw new EntityValidatorException(bindingResult.getFieldErrors().get(0).getField() + " : " + bindingResult.getAllErrors().get(0).getDefaultMessage());
         }
         intervention.getAddress().setLocation(geocodeService.fromCity(intervention.getAddress()));
 
-        if (this.interventionRepository.update(id,intervention)>0)
-        {
-            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED,"Votre intervention est modifiée avec succès"));
+        if (this.interventionRepository.update(id, intervention) > 0) {
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.CREATED, "Votre intervention est modifiée avec succès"));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.NOT_MODIFIED,"Erreur de modification de l'intervention"));
+        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.NOT_MODIFIED, "Erreur de modification de l'intervention"));
     }
 
     @Override
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<MessageResponse> delete(String id) {
-        if (this.interventionRepository.detele(id)>0)
-        {
-            return ResponseEntity.ok(new MessageResponse(HttpStatus.OK,"Votre intervention est supprimée avec succès"));
+        if (this.interventionRepository.detele(id) > 0) {
+            return ResponseEntity.ok(new MessageResponse(HttpStatus.OK, "Votre intervention est supprimée avec succès"));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.SERVICE_UNAVAILABLE,"Erreur de suppression de l'intervention"));
+        return ResponseEntity.badRequest().body(new MessageResponse(HttpStatus.SERVICE_UNAVAILABLE, "Erreur de suppression de l'intervention"));
     }
 
     @Override
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<Intervention>> all(Map<String, String> args)  {
+    public ResponseEntity<List<Intervention>> all(Map<String, String> args) {
         int page;
         int size;
         try {
-            page=args.containsKey("page")?Integer.parseInt(args.remove("page")):0;
-        }catch (NumberFormatException numberFormatException)
-        {
-            page=0;
+            page = args.containsKey("page") ? Integer.parseInt(args.remove("page")) : 0;
+        } catch (NumberFormatException numberFormatException) {
+            page = 0;
         }
         try {
-            size=args.containsKey("size")?Integer.parseInt(args.remove("size")):10;
+            size = args.containsKey("size") ? Integer.parseInt(args.remove("size")) : 10;
 
-        }catch (NumberFormatException numberFormatException)
-        {
-            size=10;
+        } catch (NumberFormatException numberFormatException) {
+            size = 10;
         }
-        String order= args.containsKey("direction")?args.remove("direction"):"desc";
-        String property= args.containsKey("property")?args.remove("property"):"createdAt";
-        Sort sort= Sort.by(order.equals("asc")?Sort.Direction.ASC : Sort.Direction.DESC,property);
-        Pageable pageable=  PageRequest.of(page,size);
+        String order = args.containsKey("direction") ? args.remove("direction") : "desc";
+        String property = args.containsKey("property") ? args.remove("property") : "createdAt";
+        Sort sort = Sort.by(order.equals("asc") ? Sort.Direction.ASC : Sort.Direction.DESC, property);
+        Pageable pageable = PageRequest.of(page, size);
         int start = (int) pageable.getOffset();
         int end;
-        HttpHeaders headers= new HttpHeaders();
+        HttpHeaders headers = new HttpHeaders();
         headers.add("Access-Control-Expose-Headers", "page,size,totalPages,totalResults");
-        headers.add("page",String.valueOf(pageable.getPageNumber()));
-        headers.add("size",String.valueOf(pageable.getPageSize()));
-        if(args.isEmpty())
-        {
-            List<Intervention> res =this.interventionRepository.all().orElse(new ArrayList<>());
+        headers.add("page", String.valueOf(pageable.getPageNumber()));
+        headers.add("size", String.valueOf(pageable.getPageSize()));
+        if (args.isEmpty()) {
+            List<Intervention> res = this.interventionRepository.all().orElse(new ArrayList<>());
             end = Math.min((start + pageable.getPageSize()), res.size());
-            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
-            headers.add("totalResults",String.valueOf(res.size()));
+            headers.add("totalPages", String.valueOf(((res.size() / pageable.getPageSize()) + Integer.compare(res.size() % pageable.getPageSize(), 0)) - 1));
+            headers.add("totalResults", String.valueOf(res.size()));
 
             try {
                 return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
-            }catch (IllegalArgumentException ex)
-            {
-                return ResponseEntity.ok().headers(headers).body(res);
-            }catch (IndexOutOfBoundsException ex)
-            {
-                return ResponseEntity.ok().headers(headers).body(res);
+            } catch (IllegalArgumentException ex) {
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
+            } catch (IndexOutOfBoundsException ex) {
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
             }
         }
-        List<Intervention> res = new ArrayList<Intervention>();
-        for (Map.Entry<String,String> e:
-                args.entrySet()) {
-            res.addAll(this.interventionRepository.search(e.getKey(),e.getValue(),sort).orElse(new ArrayList<>()));
-        }
+        List<Intervention> res=interventionRepository.searchAnd(args,sort).orElse(new ArrayList<>());
 
         try {
             end = Math.min((start + pageable.getPageSize()), res.size());
-            headers.add("totalPages",String.valueOf(((res.size()/pageable.getPageSize())+Integer.compare(res.size()%pageable.getPageSize(),0))-1));
-            headers.add("totalResults",String.valueOf(res.size()));
+            headers.add("totalPages", String.valueOf(((res.size() / pageable.getPageSize()) + Integer.compare(res.size() % pageable.getPageSize(), 0)) - 1));
+            headers.add("totalResults", String.valueOf(res.size()));
 
             return ResponseEntity.ok().headers(headers).body(new PageImpl<>(res.subList(start, end), pageable, res.size()).getContent());
-        }catch (IllegalArgumentException ex)
-        {
-            return ResponseEntity.ok().headers(headers).body(res);
-        }catch (IndexOutOfBoundsException ex)
-        {
-            return ResponseEntity.ok().headers(headers).body(res);
-        }
+        } catch (IllegalArgumentException ex) {
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
+        } catch (IndexOutOfBoundsException ex) {
+                headers.set("totalPages", String.valueOf(-1));
+                headers.set("totalResults", String.valueOf(0));
+                return ResponseEntity.ok().headers(headers).body(new ArrayList<>());
+            }
+
     }
 
-    @Override
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Intervention> findById(String id) throws ResourceNotFoundException {
-        return ResponseEntity.ok().body(this.interventionRepository.findById(id).orElseThrow(ResourceNotFoundException::new));
+        @Override
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<Intervention> findById(String id) throws ResourceNotFoundException {
+            return ResponseEntity.ok().body(this.interventionRepository.findById(id).orElseThrow(ResourceNotFoundException::new));
+        }
     }
-}
